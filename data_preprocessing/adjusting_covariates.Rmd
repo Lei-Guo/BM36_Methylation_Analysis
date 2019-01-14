@@ -1,0 +1,287 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Render the notebook with commandline Rscript -e "rmarkdown::render('adjusting_covariates.Rmd')"
+
+```{r loading packages}
+library(readxl)
+library(data.table)
+library(stringr)
+library(MASS)
+library(parallel)
+```
+
+Reading beta and M values
+```{r reading beta and M values}
+# reading beta values
+betaVal <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_Beta_M/Beta_Values_qced_normlized.tsv", data.table = F)
+
+#reading M values
+mVal <-  fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_Beta_M/M_Values_qced_normlized.tsv", data.table = F)
+```
+
+Reading Meta files
+```{r reading meta information}
+# read methylation meta info
+meta_meth <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/meta_meth.csv")
+
+# read RNAseq meta info
+meta_rnaseq <- fread("/sc/orga/projects/zhangb03a/shared/msbb-seq/Data/mixed_model_correction_updated/msbb.meta.BM_36.tsv")
+
+#edit APOE and diagnosis format
+meta_rnaseq$APOE <- gsub("/", "", gsub("e","", meta_rnaseq$APOE))
+meta_rnaseq$APOE[is.na(meta_rnaseq$APOE)] <- "Unknown"
+meta_rnaseq$Dx.by.braak.cerad[is.na(meta_rnaseq$Dx.by.braak.cerad)] <- "Unknown"
+
+#add new group columns
+meta_rnaseq[, c("sex.ad.apoe", "ad.apoe", "sex.ad") := list(paste(SEX_inferred, Dx.by.braak.cerad, APOE, sep = "."), paste(Dx.by.braak.cerad, APOE, sep = "."), paste(SEX_inferred, Dx.by.braak.cerad, sep = "."))]
+```
+
+Mapping IDs between meta_meth and meta_rnaseq
+```{r mapping IDs between meta_meth and meta_rnaseq}
+#read id map file for methylation meta file
+id_map_file <- read_xlsx("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/MethylationBarcodeXSubNumXMinghuiXWang.xlsx", skip = 10)
+setDT(id_map_file)
+#pad the SubNum to 10 digits
+id_map_file$SubNum <- str_pad(id_map_file$SubNum, 10, "left", 0)
+
+id_map_file$SubNum <- paste0("AMPAD_MSSM_", id_map_file$SubNum)
+
+#match IDs for meta_meth
+meta_meth$SynapseID <- id_map_file$SubNum[match(meta_meth$Sample_Name, id_map_file$Sample_Name_Barcode)]
+
+#ID mapping between meta_rnaseq & meta_meth
+ID_overlap <- intersect(meta_meth$SynapseID, meta_rnaseq$SynapseId)
+
+#subset meta_meth by ID_overlap
+meta_meth <- meta_meth[SynapseID %in% ID_overlap]
+
+# add sample ID column to meta_meth
+meta_meth$SampleID <- paste(meta_meth$Sentrix_ID, meta_meth$Sentrix_Position, sep = "_")
+
+# subset meta_rnaseq by ID_overlap
+meta_rnaseq <- meta_rnaseq[SynapseId %in% ID_overlap]
+
+# add sample ID column to meta_rnaseq
+meta_rnaseq$SampleID <- meta_meth$SampleID[match(meta_rnaseq$SynapseId, meta_meth$SynapseID)]
+
+# add another sample ID column to meta_rnaseq
+meta_rnaseq$SampleID_2 <- id_map_file$Sample_ID[match(meta_rnaseq$SynapseId, id_map_file$SubNum)]
+
+# add Sample batch column to meta_rnaseq
+meta_rnaseq$Sentrix_ID <- meta_meth$Sentrix_ID[match(meta_rnaseq$SynapseId, meta_meth$SynapseID)]
+```
+
+
+Removing samples with ambiguous sex and AD info
+```{r}
+meta_rnaseq <- meta_rnaseq[!SampleID_2 %in% c("PQDW544", "TVUF620", "KAST417", "DLUH936", "EOYS019") ]
+```
+
+
+Subsetting betaVal and mVal
+```{r subsetting betaVal and mVal}
+# subset betaVal
+betaVal <- betaVal[, c("V1", meta_rnaseq$SampleID)]
+
+# subset mVal
+mVal <- mVal[, c("V1", meta_rnaseq$SampleID)]
+```
+
+Transposing betaVal and mVal
+```{r transposing betaVal and mVal}
+# for betaVal
+rownames(betaVal) <- betaVal$V1
+betaVal <- betaVal[, -1]
+betaVal_t <- as.data.frame(t(betaVal))
+
+# for mVal
+rownames(mVal) <- mVal$V1
+mVal <- mVal[, -1]
+mVal_t <- as.data.frame(t(mVal))
+```
+
+Addding AOD, SEX_inferred, PMI, RACE_inferred, Sentrix_ID, columns to betaVal_t and mVal_t
+```{r addding AOD, SEX_inferred, PMI and RACE_inferred columns to betaVal_t and mVal_t}
+# for betaVal
+betaVal_t$PMI <- as.numeric(meta_rnaseq$PMI[match(rownames(betaVal_t), meta_rnaseq$SampleID)])
+betaVal_t$RACE_inferred <- as.factor(meta_rnaseq$RACE_inferred[match(rownames(betaVal_t), meta_rnaseq$SampleID)])
+betaVal_t$AOD <- as.numeric(meta_rnaseq$AOD[match(rownames(betaVal_t), meta_rnaseq$SampleID)])
+betaVal_t$Sentrix_ID <- as.factor(meta_rnaseq$Sentrix_ID[match(rownames(betaVal_t), meta_rnaseq$SampleID)])
+betaVal_t$SEX_inferred <- as.factor(meta_rnaseq$SEX_inferred[match(rownames(betaVal_t), meta_rnaseq$SampleID)])
+
+# for mVal
+mVal_t$PMI <- as.numeric(meta_rnaseq$PMI[match(rownames(mVal_t), meta_rnaseq$SampleID)])
+mVal_t$RACE_inferred <- as.factor(meta_rnaseq$RACE_inferred[match(rownames(mVal_t), meta_rnaseq$SampleID)])
+mVal_t$AOD <- as.numeric(meta_rnaseq$AOD[match(rownames(mVal_t), meta_rnaseq$SampleID)])
+mVal_t$Sentrix_ID <- as.factor(meta_rnaseq$Sentrix_ID[match(rownames(mVal_t), meta_rnaseq$SampleID)])
+mVal_t$SEX_inferred <- as.factor(meta_rnaseq$SEX_inferred[match(rownames(mVal_t), meta_rnaseq$SampleID)])
+```
+
+
+```{r calculating means for beta and m values}
+# transpose betaVal
+betaVal_t_numeric_cols <- 1:(ncol(betaVal_t)-5)
+# calculate mean of all expression values
+betaVal_t_mean <- mean(as.matrix(betaVal_t[, betaVal_t_numeric_cols]))
+
+
+# transpose mVal
+mVal_t_numeric_cols <- 1:(ncol(mVal_t)-5)
+# calculate mean of all expression values
+mVal_t_mean <- mean(as.matrix(mVal_t[, mVal_t_numeric_cols]))
+```
+
+Setting parallel clusters
+```{r setting parallel clusters}
+# Initiate cluster
+cl <- parallel::makeCluster(16)
+
+# load packages in each node
+clusterEvalQ(cl, {
+library(readxl)
+library(data.table)
+library(stringr)
+library(MASS)
+library(parallel)
+})
+
+# pass objects to each node
+clusterExport(cl, c("ID_overlap", "betaVal", "betaVal_t", "betaVal_t_mean", "betaVal_t_numeric_cols", "mVal", "mVal_t", "mVal_t_mean", "mVal_t_numeric_cols", "id_map_file", "meta_meth", "meta_rnaseq"))
+```
+
+Adjusting for AOD, SEX_inferred, PMI, RACE_inferred, Sentrix_ID
+```{r adjusting for AOD, SEX_inferred, PMI, RACE_inferred, Sentrix_ID}
+# for betaVal
+# regress out the covariates
+betaVal_t_resid_age_sex <- parApply(cl, betaVal_t[, betaVal_t_numeric_cols], 2, function(x) rlm(x ~ betaVal_t[,"AOD"] + betaVal_t[,"SEX_inferred"] + betaVal_t[,"PMI"] + betaVal_t[,"RACE_inferred"] + betaVal_t[,"Sentrix_ID"])$resid)
+
+# the adjusted expression values equal to the sum of the mean and residual
+betaVal_t_resid_age_sex <- betaVal_t_resid_age_sex + betaVal_t_mean
+
+# transpose the adjusted betaVal
+betaVal_age_sex_adjusted <- as.data.frame(t(betaVal_t_resid_age_sex))
+
+
+
+# for mVal
+# regress out the covariates
+mVal_t_resid_age_sex <- parApply(cl, mVal_t[, mVal_t_numeric_cols], 2, function(x) rlm(x ~ mVal_t[,"AOD"] + mVal_t[,"SEX_inferred"] + mVal_t[,"PMI"] + mVal_t[,"RACE_inferred"] + mVal_t[,"Sentrix_ID"])$resid)
+
+# the adjusted expression values equal to the sum of the mean and residual
+mVal_t_resid_age_sex <- mVal_t_resid_age_sex + mVal_t_mean
+
+# transpose the adjusted mVal
+mVal_age_sex_adjusted <- as.data.frame(t(mVal_t_resid_age_sex))
+```
+
+
+Adjusting for AOD, PMI, RACE_inferred, Sentrix_ID
+```{r adjusting for AOD, PMI, RACE_inferred, Sentrix_ID}
+# for betaVal
+# regress out the covariates
+betaVal_t_resid_age <- parApply(cl, betaVal_t[, betaVal_t_numeric_cols], 2, function(x) rlm(x ~ betaVal_t[,"AOD"] + betaVal_t[,"PMI"] + betaVal_t[,"RACE_inferred"] + betaVal_t[,"Sentrix_ID"])$resid)
+
+# the adjusted expression values equal to the sum of the mean and residual
+betaVal_t_resid_age <- betaVal_t_resid_age + betaVal_t_mean
+
+# transpose the adjusted betaVal
+betaVal_age_adjusted <- as.data.frame(t(betaVal_t_resid_age))
+
+
+
+# for mVal
+# regress out the covariates
+mVal_t_resid_age <- parApply(cl, mVal_t[, mVal_t_numeric_cols], 2, function(x) rlm(x ~ mVal_t[,"AOD"] + mVal_t[,"PMI"] + mVal_t[,"RACE_inferred"] + mVal_t[,"Sentrix_ID"])$resid)
+
+# the adjusted expression values equal to the sum of the mean and residual
+mVal_t_resid_age <- mVal_t_resid_age + mVal_t_mean
+
+# transpose the adjusted mVal
+mVal_age_adjusted <- as.data.frame(t(mVal_t_resid_age))
+```
+
+
+Adjusting for SEX_inferred, PMI, RACE_inferred, Sentrix_ID
+```{r adjusting for SEX_inferred, PMI, RACE_inferred, Sentrix_ID}
+# for betaVal
+# regress out the covariates
+betaVal_t_resid_sex <- parApply(cl, betaVal_t[, betaVal_t_numeric_cols], 2, function(x) rlm(x ~ betaVal_t[,"SEX_inferred"] + betaVal_t[,"PMI"] + betaVal_t[,"RACE_inferred"] + betaVal_t[,"Sentrix_ID"])$resid)
+
+# the adjusted expression values equal to the sum of the mean and residual
+betaVal_t_resid_sex <- betaVal_t_resid_sex + betaVal_t_mean
+
+# transpose the adjusted betaVal
+betaVal_sex_adjusted <- as.data.frame(t(betaVal_t_resid_sex))
+
+
+
+# for mVal
+# regress out the covariates
+mVal_t_resid_sex <- parApply(cl, mVal_t[, mVal_t_numeric_cols], 2, function(x) rlm(x ~ mVal_t[,"SEX_inferred"] + mVal_t[,"PMI"] + mVal_t[,"RACE_inferred"] + mVal_t[,"Sentrix_ID"])$resid)
+
+# the adjusted expression values equal to the sum of the mean and residual
+mVal_t_resid_sex <- mVal_t_resid_sex + mVal_t_mean
+
+# transpose the adjusted mVal
+mVal_sex_adjusted <- as.data.frame(t(mVal_t_resid_sex))
+```
+
+
+Adjusting for PMI, RACE_inferred, Sentrix_ID
+```{r adjusting for PMI, RACE_inferred, Sentrix_ID}
+# for betaVal
+# regress out the covariates
+betaVal_t_resid <- parApply(cl, betaVal_t[, betaVal_t_numeric_cols], 2, function(x) rlm(x ~ betaVal_t[,"PMI"] + betaVal_t[,"RACE_inferred"] + betaVal_t[,"Sentrix_ID"])$resid)
+
+# the adjusted expression values equal to the sum of the mean and residual
+betaVal_t_resid <- betaVal_t_resid + betaVal_t_mean
+
+# transpose the adjusted betaVal
+betaVal_adjusted <- as.data.frame(t(betaVal_t_resid))
+
+
+
+# for mVal
+# regress out the covariates
+mVal_t_resid <- parApply(cl, mVal_t[, mVal_t_numeric_cols], 2, function(x) rlm(x ~ mVal_t[,"PMI"] + mVal_t[,"RACE_inferred"] + mVal_t[,"Sentrix_ID"])$resid)
+
+# the adjusted expression values equal to the sum of the mean and residual
+mVal_t_resid <- mVal_t_resid + mVal_t_mean
+
+# transpose the adjusted mVal
+mVal_adjusted <- as.data.frame(t(mVal_t_resid))
+```
+
+
+Wrting the adjusted mVals
+```{r writing the adjusted mVals}
+# writing the sex-age-adjusted mVals
+fwrite(mVal_age_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/processed_data/M_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", row.names = T, sep = "\t")
+
+# writing the age-adjusted mVals
+fwrite(mVal_age_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", row.names = T, sep = "\t")
+
+# writing the sex-adjusted mVals
+fwrite(mVal_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", row.names = T, sep = "\t")
+
+# writing the adjusted mVals
+fwrite(mVal_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_adjusted.tsv", row.names = T, sep = "\t")
+```
+
+Wrting the adjusted betaVals
+```{r writing the adjusted betaVals}
+# writing the sex-age-adjusted betaVals
+fwrite(betaVal_age_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", row.names = T, sep = "\t")
+
+# writing the age-adjusted betaVals
+fwrite(betaVal_age_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", row.names = T, sep = "\t")
+
+# writing the sex-adjusted betaVals
+fwrite(betaVal_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", row.names = T, sep = "\t")
+
+# writing the adjusted betaVals
+fwrite(betaVal_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_adjusted.tsv", row.names = T, sep = "\t")
+```

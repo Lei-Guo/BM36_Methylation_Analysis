@@ -1,0 +1,230 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Render the notebook with commandline
+Rscript -e "rmarkdown::render('methylation_data_preprocessing_with_batch_corrected.Rmd')"
+
+Load packages required for analysis
+```{r loading packages, message=F, warning=F}
+library(data.table)
+library(limma)
+library(minfi)
+library(RColorBrewer)
+library(missMethyl)
+library(matrixStats)
+library(minfiData)
+library(Gviz)
+library(DMRcate)
+library(stringr)
+library(sva)
+```
+
+Set up data directory
+```{r a glance at raw data}
+# set up a path to the data directory
+dataDirectory <- "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/"
+
+# list the files
+#list.files(dataDirectory, recursive=TRUE)
+```
+
+Read in the sample sheet for the experiment
+```{r read in the sample sheet for the experiment}
+# read in the sample sheet for the experiment
+targets <- read.metharray.sheet(dataDirectory, pattern="meta_meth.csv")
+
+head(targets)
+```
+
+Read in the raw data from the IDAT files
+```{r read in the raw data from the IDAT files}
+# read in the raw data from the IDAT files
+rgSet <- read.metharray.exp(targets=targets)
+
+rgSet
+```
+
+QC
+```{r QC: calculate the detection p-values}
+# calculate the detection p-values
+detP <- detectionP(rgSet)
+
+detP[1:4, 1:4]
+```
+
+```{r QC: remove poor quality samples}
+# remove poor quality samples
+keep <- colMeans(detP) < 0.05
+rgSet <- rgSet[,keep]
+
+# remove poor quality samples from targets data
+targets <- targets[keep,]
+targets[1:4, 1:4]
+
+# remove poor quality samples from detection p-value table
+detP <- detP[,keep]
+dim(detP)
+```
+
+```{r QC: figures and reports, message=F, warning=F}
+# examine mean detection p-values across all samples to identify any failed samples
+pal <- brewer.pal(8,"Dark2")
+
+barplot(colMeans(detP), col=pal[factor(targets$Sample_Source)], las=2, cex.names=0.8,ylab="Mean detection p-values", xaxt='n', ann=FALSE)
+abline(h=0.001,col="red", lwd=3, lty=2)
+legend("topleft", legend=levels(factor(targets$Sample_Source)), fill=pal, bg="white")
+
+# qc report
+qcReport(rgSet, sampNames=targets$Sample_Name, sampGroups=targets$Sample_Source, pdf="qcReport.pdf")
+```
+
+Normalization
+```{r normalization}
+# normalize the data; this results in a GenomicRatioSet object
+mSetSq <- preprocessQuantile(rgSet)
+```
+
+```{r normalization: figures}
+# create a MethylSet object from the raw data for plotting
+mSetRaw <- preprocessRaw(rgSet)
+
+# visualise what the data looks like before and after normalisation
+par(mfrow=c(1,2))
+
+densityPlot(mSetRaw, sampGroups=targets$Sample_Source,main="Raw", legend=FALSE)
+legend("top", legend = levels(factor(targets$Sample_Source)), text.col=brewer.pal(8,"Dark2"))
+
+densityPlot(getBeta(mSetSq), sampGroups=targets$Sample_Source, main="Normalized", legend=FALSE)
+legend("top", legend = levels(factor(targets$Sample_Source)), text.col=brewer.pal(8,"Dark2"))
+```
+
+Data exploration
+```{r data exploration: figure 1}
+# MDS plots to look at largest sources of variation
+
+plotMDS(getM(mSetSq), top=1000, gene.selection="common", col=pal[factor(targets$Sample_Source)], pch = 19)
+legend("top", legend=levels(factor(targets$Sample_Source)), text.col=pal, bg="white", cex=0.7)
+```
+
+```{r data exploration: figure 2}
+# Examine higher dimensions to look at other sources of variation
+par(mfrow=c(1,3))
+
+plotMDS(getM(mSetSq), top=1000, gene.selection="common", col=pal[factor(targets$Sample_Source)], dim=c(1,3), pch = 19)
+legend("top", legend=levels(factor(targets$Sample_Source)), text.col=pal, cex=0.7, bg="white")
+
+plotMDS(getM(mSetSq), top=1000, gene.selection="common", col=pal[factor(targets$Sample_Source)], dim=c(2,3), pch = 19)
+legend("topleft", legend=levels(factor(targets$Sample_Source)), text.col=pal, cex=0.7, bg="white")
+
+plotMDS(getM(mSetSq), top=1000, gene.selection="common", col=pal[factor(targets$Sample_Source)], dim=c(3,4), pch = 19)
+legend("topright", legend=levels(factor(targets$Sample_Source)), text.col=pal, cex=0.7, bg="white")
+```
+
+Filtering
+```{r filtering poor probes}
+# ensure probes are in the same order in the mSetSq and detP objects
+detP <- detP[match(featureNames(mSetSq),rownames(detP)),]
+
+# remove any probes that have failed in one or more samples
+keep <- rowSums(detP < 0.01) == ncol(mSetSq)
+table(keep)
+
+mSetSqFlt <- mSetSq[keep,]
+mSetSqFlt
+```
+
+```{r remove probes with SNPs at CpG site}
+# remove probes with SNPs at CpG site
+mSetSqFlt <- dropLociWithSnps(mSetSqFlt)
+
+mSetSqFlt
+```
+
+```{r exclude cross reactive probes}
+# exclude cross reactive probes
+xReactiveProbes <- read.csv(file=paste(dataDirectory, "42558-non-specific-probes-Illumina850k.txt", sep="/"), stringsAsFactors=FALSE, header = F)
+keep <- !(featureNames(mSetSqFlt) %in% xReactiveProbes$V1)
+table(keep)
+
+mSetSqFlt <- mSetSqFlt[keep,]
+mSetSqFlt
+```
+
+Re-examine the MDS plots to see if the relationship between the samples has changed after filtering
+```{r re-examine the MDS plots}
+plotMDS(getM(mSetSqFlt), top=1000, gene.selection="common", col=pal[factor(targets$Sample_Source)], cex=0.8, pch = 19)
+legend("right", legend=levels(factor(targets$Sample_Source)), text.col=pal, cex=0.65, bg="white")
+```
+
+```{r re-examine higher dimensions to look at other sources of variation}
+# Examine higher dimensions to look at other sources of variation
+par(mfrow=c(1,3))
+
+plotMDS(getM(mSetSqFlt), top=1000, gene.selection="common", col=pal[factor(targets$Sample_Source)], dim=c(1,3), pch = 19)
+legend("right", legend=levels(factor(targets$Sample_Source)), text.col=pal, cex=0.7, bg="white")
+
+plotMDS(getM(mSetSqFlt), top=1000, gene.selection="common", col=pal[factor(targets$Sample_Source)], dim=c(2,3), pch = 19)
+legend("topright", legend=levels(factor(targets$Sample_Source)), text.col=pal, cex=0.7, bg="white")
+
+plotMDS(getM(mSetSqFlt), top=1000, gene.selection="common", col=pal[factor(targets$Sample_Source)], dim=c(3,4), pch = 19)
+legend("right", legend=levels(factor(targets$Sample_Source)), text.col=pal, cex=0.7, bg="white")
+```
+
+
+Calculate M-values for statistical analysis
+```{r calculate M and Beta values}
+# calculate M-values for statistical analysis
+mVals <- getM(mSetSqFlt)
+mVals[1:4, 1:4]
+
+# calculate Beta-values for statistical analysis
+bVals <- getBeta(mSetSqFlt)
+bVals[1:4, 1:4]
+```
+
+```{r plot M and Beta values}
+par(mfrow=c(1,2))
+
+densityPlot(bVals, sampGroups=targets$Sample_Source, main="Beta values", legend=FALSE, xlab="Beta values")
+legend("top", legend = levels(factor(targets$Sample_Source)), text.col=brewer.pal(8,"Dark2"))
+
+densityPlot(mVals, sampGroups=targets$Sample_Source, main="M-values", legend=FALSE, xlab="M values")
+legend("topleft", legend = levels(factor(targets$Sample_Source)), text.col=brewer.pal(8,"Dark2"))
+```
+
+
+Correcting the batch effect
+```{r make the pheno matrix, i.e. subset the target object}
+pheno_mx <- targets[, c("Basename", "Slide")]
+
+# remove the path from Basename
+pheno_mx$Basename <- trimws(basename(pheno_mx$Basename))
+```
+
+```{r creating models for Combat}
+# batch info
+batch <- as.factor(pheno_mx$Slide)
+
+# create a model matrix for the adjustment variables
+modcombat <- model.matrix(~1, data=pheno_mx)
+```
+
+```{r running Combat for Beta Values}
+# apply the ComBat function to the data, using parametric empirical Bayesian adjustments
+bvals_batch_corrected <- ComBat(dat=bVals, batch=batch, mod=modcombat, par.prior=TRUE, prior.plots=T, BPPARAM = MulticoreParam(workers=12))
+```
+
+```{r running Combat for M Values}
+# apply the ComBat function to the data, using parametric empirical Bayesian adjustments
+mvals_batch_corrected <- ComBat(dat=mVals, batch=batch, mod=modcombat, par.prior=TRUE, prior.plots=T, BPPARAM = MulticoreParam(workers=12))
+```
+
+Write QCed, normalized and batch corrected M and Beta values
+```{r write M and Beta values}
+fwrite(as.data.frame(mvals_batch_corrected), "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/M_Values_qced_normlized_batchcorrected.tsv", sep = "\t", row.names = T)
+
+fwrite(as.data.frame(bvals_batch_corrected), "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/Beta_Values_qced_normlized_batchcorrected.tsv", sep = "\t", row.names = T)
+```
+

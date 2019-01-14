@@ -1,0 +1,537 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Rscript -e "rmarkdown::render('DMP_analysis.Rmd')"
+
+```{r loading packages, message = FALSE, warning = FALSE}
+library(IlluminaHumanMethylationEPICanno.ilm10b2.hg19)
+library(limma)
+library(data.table)
+library(DMRcate)
+```
+
+Reading expressionsets
+```{r reading the expressionsets, message = FALSE}
+# read sex adjusted expressionset
+mVal_age_sex_adj <- readRDS("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.rds")
+
+# read non-sex-adjusted expressionset
+mVal_age_adj <- readRDS("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_age_adjusted.rds")
+```
+
+Getting the beadarray annotation data
+```{r getting the beadarray annotation data}
+# get the beadarray annotation data
+ann_epic <- getAnnotation(IlluminaHumanMethylationEPICanno.ilm10b2.hg19)
+
+ann850kSub <- ann_epic[match(rownames(mVal_age_sex_adj), ann_epic$Name), c(1:4,12:19,24:ncol(ann_epic))]
+```
+
+Checking sample number in each group
+```{r checking sample number in each group}
+# for AD-NL groups
+as.data.frame(table(pData(mVal_age_sex_adj)$Dx.by.braak.cera))
+
+# for ad.apoe groups
+as.data.frame(table(pData(mVal_age_sex_adj)$ad.apoe))
+
+# for sex.ad.apoe groups
+as.data.frame(table(pData(mVal_age_sex_adj)$sex.ad.apoe))
+```
+
+
+## Between AD and Normal
+
+DE analysis for AD-NL
+```{r DE analysis for AD-NL}
+# subset AD and Normal
+mVal_age_sex_adj_ad_nl <- mVal_age_sex_adj[ , mVal_age_sex_adj$Dx.by.braak.cerad == "AD" | mVal_age_sex_adj$Dx.by.braak.cerad == "Normal"]
+
+# make design matrix
+design_ad_nl <- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad_nl$Dx.by.braak.cerad))
+colnames(design_ad_nl) <- levels(factor(mVal_age_sex_adj_ad_nl$Dx.by.braak.cerad))
+
+# make contrast matrix
+contrast_ad_nl <- makeContrasts(contrasts = "AD-Normal", levels = design_ad_nl)
+
+# de analyis
+fit_ad_nl <- lmFit(mVal_age_sex_adj_ad_nl, design_ad_nl)
+fit_ad_nl_2 <- contrasts.fit(fit_ad_nl, contrast_ad_nl)
+fit_ad_nl_2 <- eBayes(fit_ad_nl_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_ad_nl_2))
+
+# save de results
+res_ad_nl <- topTable(fit_ad_nl_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for AD.34-NL.34
+```{r DE analysis for AD.34-NL.34}
+# subset AD.34 and Normal.34
+mVal_age_sex_adj_ad34_nl34 <- mVal_age_sex_adj[ , mVal_age_sex_adj$ad.apoe == "AD.34" | mVal_age_sex_adj$ad.apoe == "Normal.34"]
+
+# make design matrix
+design_ad34_nl34 <- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad34_nl34$ad.apoe))
+colnames(design_ad34_nl34) <- levels(factor(mVal_age_sex_adj_ad34_nl34$ad.apoe))
+
+# make contrast matrix
+contrast_ad34_nl34 <- makeContrasts(contrasts = "AD.34-Normal.34", levels = design_ad34_nl34)
+
+# de analyis
+fit_ad34_nl34 <- lmFit(mVal_age_sex_adj_ad34_nl34, design_ad34_nl34)
+fit_ad34_nl34_2 <- contrasts.fit(fit_ad34_nl34, contrast_ad34_nl34)
+fit_ad34_nl34_2 <- eBayes(fit_ad34_nl34_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_ad34_nl34_2))
+
+# save de results
+res_ad34_nl34 <- topTable(fit_ad34_nl34_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for AD.33-NL.33
+```{r DE analysis for AD.33-NL.33}
+# subset AD.33 and Normal.33
+mVal_age_sex_adj_ad33_nl33 <- mVal_age_sex_adj[ , mVal_age_sex_adj$ad.apoe == "AD.33" | mVal_age_sex_adj$ad.apoe == "Normal.33"]
+
+# make design matrix
+design_ad33_nl33 <- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad33_nl33$ad.apoe))
+colnames(design_ad33_nl33) <- levels(factor(mVal_age_sex_adj_ad33_nl33$ad.apoe))
+
+# make contrast matrix
+contrast_ad33_nl33 <- makeContrasts(contrasts = "AD.33-Normal.33", levels = design_ad33_nl33)
+
+# de analyis
+fit_ad33_nl33 <- lmFit(mVal_age_sex_adj_ad33_nl33, design_ad33_nl33)
+fit_ad33_nl33_2 <- contrasts.fit(fit_ad33_nl33, contrast_ad33_nl33)
+fit_ad33_nl33_2 <- eBayes(fit_ad33_nl33_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_ad33_nl33_2))
+
+# save de results
+res_ad33_nl33 <- topTable(fit_ad33_nl33_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for AD.23-NL.23
+```{r DE analysis for AD.23-NL.23}
+# subset AD.23 and Normal.23
+mVal_age_sex_adj_ad23_nl23 <- mVal_age_sex_adj[ , mVal_age_sex_adj$ad.apoe == "AD.23" | mVal_age_sex_adj$ad.apoe == "Normal.23"]
+
+# make design matrix
+design_ad23_nl23 <- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad23_nl23$ad.apoe))
+colnames(design_ad23_nl23) <- levels(factor(mVal_age_sex_adj_ad23_nl23$ad.apoe))
+
+# make contrast matrix
+contrast_ad23_nl23 <- makeContrasts(contrasts = "AD.23-Normal.23", levels = design_ad23_nl23)
+
+# de analyis
+fit_ad23_nl23 <- lmFit(mVal_age_sex_adj_ad23_nl23, design_ad23_nl23)
+fit_ad23_nl23_2 <- contrasts.fit(fit_ad23_nl23, contrast_ad23_nl23)
+fit_ad23_nl23_2 <- eBayes(fit_ad23_nl23_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_ad23_nl23_2))
+
+# save de results
+res_ad23_nl23 <- topTable(fit_ad23_nl23_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.AD-F.NL
+```{r DE analysis for F.AD-F.NL}
+# subset F.AD and F.Normal
+mVal_age_adj_fad_fnl <- mVal_age_adj[ , mVal_age_adj$sex.ad == "F.AD" | mVal_age_adj$sex.ad == "F.Normal"]
+
+# make design matrix
+design_fad_fnl <- model.matrix(~ 0 + factor(mVal_age_adj_fad_fnl$sex.ad))
+colnames(design_fad_fnl) <- levels(factor(mVal_age_adj_fad_fnl$sex.ad))
+
+# make contrast matrix
+contrast_fad_fnl <- makeContrasts(contrasts = "F.AD-F.Normal", levels = design_fad_fnl)
+
+# de analyis
+fit_fad_fnl <- lmFit(mVal_age_adj_fad_fnl, design_fad_fnl)
+fit_fad_fnl_2 <- contrasts.fit(fit_fad_fnl, contrast_fad_fnl)
+fit_fad_fnl_2 <- eBayes(fit_fad_fnl_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fad_fnl_2))
+
+# save de results
+res_fad_fnl <- topTable(fit_fad_fnl_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.AD.34-F.Normal.34
+```{r DE analysis for F.AD.34-F.Normal.34}
+# subset F.AD.34 and F.Normal.34
+mVal_age_adj_fad34_fnl34 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.AD.34" | mVal_age_adj$sex.ad.apoe == "F.Normal.34"]
+
+# make design matrix
+design_fad34_fnl34 <- model.matrix(~ 0 + factor(mVal_age_adj_fad34_fnl34$sex.ad.apoe))
+colnames(design_fad34_fnl34) <- levels(factor(mVal_age_adj_fad34_fnl34$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fad34_fnl34 <- makeContrasts(contrasts = "F.AD.34-F.Normal.34", levels = design_fad34_fnl34)
+
+# de analyis
+fit_fad34_fnl34 <- lmFit(mVal_age_adj_fad34_fnl34, design_fad34_fnl34)
+fit_fad34_fnl34_2 <- contrasts.fit(fit_fad34_fnl34, contrast_fad34_fnl34)
+fit_fad34_fnl34_2 <- eBayes(fit_fad34_fnl34_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fad34_fnl34_2))
+
+# save de results
+res_fad34_fnl34 <- topTable(fit_fad34_fnl34_2, n = Inf, genelist = ann850kSub)
+```
+
+```{r DE analysis for F.AD.33-F.Normal.33}
+# subset F.AD.33 and F.Normal.33
+mVal_age_adj_fad33_fnl33 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.AD.33" | mVal_age_adj$sex.ad.apoe == "F.Normal.33"]
+
+# make design matrix
+design_fad33_fnl33 <- model.matrix(~ 0 + factor(mVal_age_adj_fad33_fnl33$sex.ad.apoe))
+colnames(design_fad33_fnl33) <- levels(factor(mVal_age_adj_fad33_fnl33$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fad33_fnl33 <- makeContrasts(contrasts = "F.AD.33-F.Normal.33", levels = design_fad33_fnl33)
+
+# de analyis
+fit_fad33_fnl33 <- lmFit(mVal_age_adj_fad33_fnl33, design_fad33_fnl33)
+fit_fad33_fnl33_2 <- contrasts.fit(fit_fad33_fnl33, contrast_fad33_fnl33)
+fit_fad33_fnl33_2 <- eBayes(fit_fad33_fnl33_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fad33_fnl33_2))
+
+# save de results
+res_fad33_fnl33 <- topTable(fit_fad33_fnl33_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.AD.23-F.Normal.23
+```{r DE analysis for F.AD.23-F.Normal.23}
+# subset F.AD.23 and F.Normal.23
+mVal_age_adj_fad23_fnl23 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.AD.23" | mVal_age_adj$sex.ad.apoe == "F.Normal.23"]
+
+# make design matrix
+design_fad23_fnl23 <- model.matrix(~ 0 + factor(mVal_age_adj_fad23_fnl23$sex.ad.apoe))
+colnames(design_fad23_fnl23) <- levels(factor(mVal_age_adj_fad23_fnl23$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fad23_fnl23 <- makeContrasts(contrasts = "F.AD.23-F.Normal.23", levels = design_fad23_fnl23)
+
+# de analyis
+fit_fad23_fnl23 <- lmFit(mVal_age_adj_fad23_fnl23, design_fad23_fnl23)
+fit_fad23_fnl23_2 <- contrasts.fit(fit_fad23_fnl23, contrast_fad23_fnl23)
+fit_fad23_fnl23_2 <- eBayes(fit_fad23_fnl23_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fad23_fnl23_2))
+
+# save de results
+res_fad23_fnl23 <- topTable(fit_fad23_fnl23_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for M.AD-M.NL
+```{r DE analysis for M.AD-M.NL}
+# subset M.AD and M.Normal
+mVal_age_adj_mad_mnl <- mVal_age_adj[ , mVal_age_adj$sex.ad == "M.AD" | mVal_age_adj$sex.ad == "M.Normal"]
+
+# make design matrix
+design_mad_mnl <- model.matrix(~ 0 + factor(mVal_age_adj_mad_mnl$sex.ad))
+colnames(design_mad_mnl) <- levels(factor(mVal_age_adj_mad_mnl$sex.ad))
+
+# make contrast matrix
+contrast_mad_mnl <- makeContrasts(contrasts = "M.AD-M.Normal", levels = design_mad_mnl)
+
+# de analyis
+fit_mad_mnl <- lmFit(mVal_age_adj_mad_mnl, design_mad_mnl)
+fit_mad_mnl_2 <- contrasts.fit(fit_mad_mnl, contrast_mad_mnl)
+fit_mad_mnl_2 <- eBayes(fit_mad_mnl_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_mad_mnl_2))
+
+# save de results
+res_mad_mnl <- topTable(fit_mad_mnl_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for M.AD.34-M.Normal.34
+```{r DE analysis for M.AD.34-M.Normal.34}
+# subset M.AD.34 and M.Normal.34
+mVal_age_adj_mad34_mnl34 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "M.AD.34" | mVal_age_adj$sex.ad.apoe == "M.Normal.34"]
+
+# make design matrix
+design_mad34_mnl34 <- model.matrix(~ 0 + factor(mVal_age_adj_mad34_mnl34$sex.ad.apoe))
+colnames(design_mad34_mnl34) <- levels(factor(mVal_age_adj_mad34_mnl34$sex.ad.apoe))
+
+# make contrast matrix
+contrast_mad34_mnl34 <- makeContrasts(contrasts = "M.AD.34-M.Normal.34", levels = design_mad34_mnl34)
+
+# de analyis
+fit_mad34_mnl34 <- lmFit(mVal_age_adj_mad34_mnl34, design_mad34_mnl34)
+fit_mad34_mnl34_2 <- contrasts.fit(fit_mad34_mnl34, contrast_mad34_mnl34)
+fit_mad34_mnl34_2 <- eBayes(fit_mad34_mnl34_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_mad34_mnl34_2))
+
+# save de results
+res_mad34_mnl34 <- topTable(fit_mad34_mnl34_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for M.AD.33-M.Normal.33
+```{r DE analysis for M.AD.33-M.Normal.33}
+# subset M.AD.33 and M.Normal.33
+mVal_age_adj_mad33_mnl33 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "M.AD.33" | mVal_age_adj$sex.ad.apoe == "M.Normal.33"]
+
+# make design matrix
+design_mad33_mnl33 <- model.matrix(~ 0 + factor(mVal_age_adj_mad33_mnl33$sex.ad.apoe))
+colnames(design_mad33_mnl33) <- levels(factor(mVal_age_adj_mad33_mnl33$sex.ad.apoe))
+
+# make contrast matrix
+contrast_mad33_mnl33 <- makeContrasts(contrasts = "M.AD.33-M.Normal.33", levels = design_mad33_mnl33)
+
+# de analyis
+fit_mad33_mnl33 <- lmFit(mVal_age_adj_mad33_mnl33, design_mad33_mnl33)
+fit_mad33_mnl33_2 <- contrasts.fit(fit_mad33_mnl33, contrast_mad33_mnl33)
+fit_mad33_mnl33_2 <- eBayes(fit_mad33_mnl33_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_mad33_mnl33_2))
+
+# save de results
+res_mad33_mnl33 <- topTable(fit_mad33_mnl33_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for M.AD.23-M.Normal.23
+```{r DE analysis for M.AD.23-M.Normal.23}
+# subset M.AD.23 and M.Normal.23
+mVal_age_adj_mad23_mnl23 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "M.AD.23" | mVal_age_adj$sex.ad.apoe == "M.Normal.23"]
+
+# make design matrix
+design_mad23_mnl23 <- model.matrix(~ 0 + factor(mVal_age_adj_mad23_mnl23$sex.ad.apoe))
+colnames(design_mad23_mnl23) <- levels(factor(mVal_age_adj_mad23_mnl23$sex.ad.apoe))
+
+# make contrast matrix
+contrast_mad23_mnl23 <- makeContrasts(contrasts = "M.AD.23-M.Normal.23", levels = design_mad23_mnl23)
+
+# de analyis
+fit_mad23_mnl23 <- lmFit(mVal_age_adj_mad23_mnl23, design_mad23_mnl23)
+fit_mad23_mnl23_2 <- contrasts.fit(fit_mad23_mnl23, contrast_mad23_mnl23)
+fit_mad23_mnl23_2 <- eBayes(fit_mad23_mnl23_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_mad23_mnl23_2))
+
+# save de results
+res_mad23_mnl23 <- topTable(fit_mad23_mnl23_2, n = Inf, genelist = ann850kSub)
+```
+
+## Between Female and Male
+
+DE analysis for F.AD-M.AD
+```{r DE analysis for F.AD-M.AD}
+# subset F.AD and M.AD
+mVal_age_adj_fad_mad <- mVal_age_adj[ , mVal_age_adj$sex.ad == "F.AD" | mVal_age_adj$sex.ad == "M.AD"]
+
+# make design matrix
+design_fad_mad <- model.matrix(~ 0 + factor(mVal_age_adj_fad_mad$sex.ad))
+colnames(design_fad_mad) <- levels(factor(mVal_age_adj_fad_mad$sex.ad))
+
+# make contrast matrix
+contrast_fad_mad <- makeContrasts(contrasts = "F.AD-M.AD", levels = design_fad_mad)
+
+# de analyis
+fit_fad_mad <- lmFit(mVal_age_adj_fad_mad, design_fad_mad)
+fit_fad_mad_2 <- contrasts.fit(fit_fad_mad, contrast_fad_mad)
+fit_fad_mad_2 <- eBayes(fit_fad_mad_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fad_mad_2))
+
+# save de results
+res_fad_mad <- topTable(fit_fad_mad_2, n = Inf, genelist = ann850kSub)
+```
+
+```{r DE analysis for F.Normal-M.Normal}
+# subset F.Normal and M.Normal
+mVal_age_adj_fnl_mnl <- mVal_age_adj[ , mVal_age_adj$sex.ad == "F.Normal" | mVal_age_adj$sex.ad == "M.Normal"]
+
+# make design matrix
+design_fnl_mnl <- model.matrix(~ 0 + factor(mVal_age_adj_fnl_mnl$sex.ad))
+colnames(design_fnl_mnl) <- levels(factor(mVal_age_adj_fnl_mnl$sex.ad))
+
+# make contrast matrix
+contrast_fnl_mnl <- makeContrasts(contrasts = "F.Normal-M.Normal", levels = design_fnl_mnl)
+
+# de analyis
+fit_fnl_mnl <- lmFit(mVal_age_adj_fnl_mnl, design_fnl_mnl)
+fit_fnl_mnl_2 <- contrasts.fit(fit_fnl_mnl, contrast_fnl_mnl)
+fit_fnl_mnl_2 <- eBayes(fit_fnl_mnl_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fnl_mnl_2))
+
+# save de results
+res_fnl_mnl <- topTable(fit_fnl_mnl_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.AD.34-M.AD.34
+```{r DE analysis for F.AD.34-M.AD.34}
+# subset F.AD.34 and M.AD.34
+mVal_age_adj_fad34_mad34 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.AD.34" | mVal_age_adj$sex.ad.apoe == "M.AD.34"]
+
+# make design matrix
+design_fad34_mad34 <- model.matrix(~ 0 + factor(mVal_age_adj_fad34_mad34$sex.ad.apoe))
+colnames(design_fad34_mad34) <- levels(factor(mVal_age_adj_fad34_mad34$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fad34_mad34 <- makeContrasts(contrasts = "F.AD.34-M.AD.34", levels = design_fad34_mad34)
+
+# de analyis
+fit_fad34_mad34 <- lmFit(mVal_age_adj_fad34_mad34, design_fad34_mad34)
+fit_fad34_mad34_2 <- contrasts.fit(fit_fad34_mad34, contrast_fad34_mad34)
+fit_fad34_mad34_2 <- eBayes(fit_fad34_mad34_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fad34_mad34_2))
+
+# save de results
+res_fad34_mad34 <- topTable(fit_fad34_mad34_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.Normal.34-M.Normal.34
+```{r DE analysis for F.Normal.34-M.Normal.34}
+# subset F.Normal.34 and M.Normal.34
+mVal_age_adj_fnl34_mnl34 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.Normal.34" | mVal_age_adj$sex.ad.apoe == "M.Normal.34"]
+
+# make design matrix
+design_fnl34_mnl34 <- model.matrix(~ 0 + factor(mVal_age_adj_fnl34_mnl34$sex.ad.apoe))
+colnames(design_fnl34_mnl34) <- levels(factor(mVal_age_adj_fnl34_mnl34$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fnl34_mnl34 <- makeContrasts(contrasts = "F.Normal.34-M.Normal.34", levels = design_fnl34_mnl34)
+
+# de analyis
+fit_fnl34_mnl34 <- lmFit(mVal_age_adj_fnl34_mnl34, design_fnl34_mnl34)
+fit_fnl34_mnl34_2 <- contrasts.fit(fit_fnl34_mnl34, contrast_fnl34_mnl34)
+fit_fnl34_mnl34_2 <- eBayes(fit_fnl34_mnl34_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fnl34_mnl34_2))
+
+# save de results
+res_fnl34_mnl34 <- topTable(fit_fnl34_mnl34_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.AD.33-M.AD.33
+```{r DE analysis for F.AD.33-M.AD.33}
+# subset F.AD.33 and M.AD.33
+mVal_age_adj_fad33_mad33 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.AD.33" | mVal_age_adj$sex.ad.apoe == "M.AD.33"]
+
+# make design matrix
+design_fad33_mad33 <- model.matrix(~ 0 + factor(mVal_age_adj_fad33_mad33$sex.ad.apoe))
+colnames(design_fad33_mad33) <- levels(factor(mVal_age_adj_fad33_mad33$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fad33_mad33 <- makeContrasts(contrasts = "F.AD.33-M.AD.33", levels = design_fad33_mad33)
+
+# de analyis
+fit_fad33_mad33 <- lmFit(mVal_age_adj_fad33_mad33, design_fad33_mad33)
+fit_fad33_mad33_2 <- contrasts.fit(fit_fad33_mad33, contrast_fad33_mad33)
+fit_fad33_mad33_2 <- eBayes(fit_fad33_mad33_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fad33_mad33_2))
+
+# save de results
+res_fad33_mad33 <- topTable(fit_fad33_mad33_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.Normal.33-M.Normal.33
+```{r DE analysis for F.Normal.33-M.Normal.33}
+# subset F.Normal.33 and M.Normal.33
+mVal_age_adj_fnl33_mnl33 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.Normal.33" | mVal_age_adj$sex.ad.apoe == "M.Normal.33"]
+
+# make design matrix
+design_fnl33_mnl33 <- model.matrix(~ 0 + factor(mVal_age_adj_fnl33_mnl33$sex.ad.apoe))
+colnames(design_fnl33_mnl33) <- levels(factor(mVal_age_adj_fnl33_mnl33$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fnl33_mnl33 <- makeContrasts(contrasts = "F.Normal.33-M.Normal.33", levels = design_fnl33_mnl33)
+
+# de analyis
+fit_fnl33_mnl33 <- lmFit(mVal_age_adj_fnl33_mnl33, design_fnl33_mnl33)
+fit_fnl33_mnl33_2 <- contrasts.fit(fit_fnl33_mnl33, contrast_fnl33_mnl33)
+fit_fnl33_mnl33_2 <- eBayes(fit_fnl33_mnl33_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fnl33_mnl33_2))
+
+# save de results
+res_fnl33_mnl33 <- topTable(fit_fnl33_mnl33_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.AD.23-M.AD.23
+```{r DE analysis for F.AD.23-M.AD.23}
+# subset F.AD.23 and M.AD.23
+mVal_age_adj_fad23_mad23 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.AD.23" | mVal_age_adj$sex.ad.apoe == "M.AD.23"]
+
+# make design matrix
+design_fad23_mad23 <- model.matrix(~ 0 + factor(mVal_age_adj_fad23_mad23$sex.ad.apoe))
+colnames(design_fad23_mad23) <- levels(factor(mVal_age_adj_fad23_mad23$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fad23_mad23 <- makeContrasts(contrasts = "F.AD.23-M.AD.23", levels = design_fad23_mad23)
+
+# de analyis
+fit_fad23_mad23 <- lmFit(mVal_age_adj_fad23_mad23, design_fad23_mad23)
+fit_fad23_mad23_2 <- contrasts.fit(fit_fad23_mad23, contrast_fad23_mad23)
+fit_fad23_mad23_2 <- eBayes(fit_fad23_mad23_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fad23_mad23_2))
+
+# save de results
+res_fad23_mad23 <- topTable(fit_fad23_mad23_2, n = Inf, genelist = ann850kSub)
+```
+
+DE analysis for F.Normal.23-M.Normal.23
+```{r DE analysis for F.Normal.23-M.Normal.23}
+# subset F.Normal.23 and M.Normal.23
+mVal_age_adj_fnl23_mnl23 <- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe == "F.Normal.23" | mVal_age_adj$sex.ad.apoe == "M.Normal.23"]
+
+# make design matrix
+design_fnl23_mnl23 <- model.matrix(~ 0 + factor(mVal_age_adj_fnl23_mnl23$sex.ad.apoe))
+colnames(design_fnl23_mnl23) <- levels(factor(mVal_age_adj_fnl23_mnl23$sex.ad.apoe))
+
+# make contrast matrix
+contrast_fnl23_mnl23 <- makeContrasts(contrasts = "F.Normal.23-M.Normal.23", levels = design_fnl23_mnl23)
+
+# de analyis
+fit_fnl23_mnl23 <- lmFit(mVal_age_adj_fnl23_mnl23, design_fnl23_mnl23)
+fit_fnl23_mnl23_2 <- contrasts.fit(fit_fnl23_mnl23, contrast_fnl23_mnl23)
+fit_fnl23_mnl23_2 <- eBayes(fit_fnl23_mnl23_2)
+
+# look at the numbers of DM CpGs at FDR < 0.05
+summary(decideTests(fit_fnl23_mnl23_2))
+
+# save de results
+res_fnl23_mnl23 <- topTable(fit_fnl23_mnl23_2, n = Inf, genelist = ann850kSub)
+```
+
+Writing the results
+```{r writing the DMP results, message = F}
+# DMP results
+res_dmp_all <- list(res_ad_nl, res_ad34_nl34, res_ad33_nl33, res_ad23_nl23, res_fad_fnl, res_fad34_fnl34, res_fad33_fnl33, res_fad23_fnl23, res_mad_mnl, res_mad34_mnl34, res_mad33_mnl33, res_mad23_mnl23, res_fad_mad, res_fnl_mnl, res_fad34_mad34, res_fnl34_mnl34, res_fad33_mad33, res_fnl33_mnl33, res_fad23_mad23, res_fnl23_mnl23)
+
+# output names
+out_names <- paste0("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/", c("DMP_ad_nl.tsv", "DMP_ad34_nl34.tsv", "DMP_ad33_nl33.tsv", "DMP_ad23_nl23.tsv", "DMP_fad_fnl.tsv", "DMP_fad34_fnl34.tsv", "DMP_fad33_fnl33.tsv", "DMP_fad23_fnl23.tsv", "DMP_mad_mnl.tsv", "DMP_mad34_mnl34.tsv", "DMP_mad33_mnl33.tsv", "DMP_mad23_mnl23.tsv", "DMP_fad_mad.tsv", "DMP_fnl_mnl.tsv", "DMP_fad34_mad34.tsv", "DMP_fnl34_mnl34.tsv", "DMP_fad33_mad33.tsv", "DMP_fnl33_mnl33.tsv", "DMP_fad23_mad23.tsv", "DMP_fnl23_mnl23.tsv"))
+
+# write the results
+invisible(mapply(fwrite, res_dmp_all, out_names, MoreArgs = list(row.names = T, sep = "\t")))
+```

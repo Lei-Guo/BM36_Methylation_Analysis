@@ -1,0 +1,62 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Rscript -e "rmarkdown::render('Venn_for_DMPs.Rmd')"
+
+```{r loading packages, message = F}
+library(data.table)
+library(VennDiagram)
+```
+
+
+Reading DMP results
+```{r reading DMP results}
+DMP_path <- paste0("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/", c("DMP_fad_mad.tsv", "DMP_fnl_mnl.tsv", "DMP_fad34_mad34.tsv", "DMP_fnl34_mnl34.tsv", "DMP_fad33_mad33.tsv", "DMP_fnl33_mnl33.tsv", "DMP_fad23_mad23.tsv", "DMP_fnl23_mnl23.tsv"))
+
+DMPs <- lapply(DMP_path, fread)
+names(DMPs) <- c("fad_mad", "fnl_mnl", "fad34_mad34", "fnl34_mnl34", "fad33_mad33", "fnl33_mnl33", "fad23_mad23", "fnl23_mnl23")
+```
+
+Subsetting significant DMPs
+```{r subsetting significant results}
+# subset significantly upregulated DMPs
+dmp_sig_up <- lapply(DMPs, function(df) df[adj.P.Val < 0.05 & logFC > 0])
+
+# subset significantly downregulated DMPs
+dmp_sig_down <- lapply(DMPs, function(df) df[adj.P.Val < 0.05 & logFC < 0])
+```
+
+Venn diagrams
+```{r Venn diagrams}
+# venn for f_m
+id_f_m_dmp <- list(dmp_sig_up[[1]]$V1, dmp_sig_up[[2]]$V1, dmp_sig_down[[1]]$V1, dmp_sig_down[[2]]$V1)
+names(id_f_m_dmp) <- c("F.ADvsM.AD_up", "F.NLvsM.NL_up", "F.ADvsM.AD_down", "F.NLvsM.NL_down")
+venn.diagram(id_f_m_dmp, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/venn_f_m.tiff", height = 3000, width = 3000, cat.cex = 0.6, sub.pos = c(0.5, 0.5), fill = c("red", "blue", "green", "yellow"))
+venn_f_m_part <- get.venn.partitions(id_f_m_dmp)
+
+# venn for f34_m34
+id_f34_m34_dmp <- list(dmp_sig_up[[3]]$V1, dmp_sig_up[[4]]$V1, dmp_sig_down[[3]]$V1, dmp_sig_down[[4]]$V1)
+names(id_f34_m34_dmp) <- c("F.AD.34vsM.AD.34_up", "F.NL.34vsM.NL.34_up", "F.AD.34vsM.AD.34_down", "F.NL.34vsM.NL.34_down")
+venn.diagram(id_f34_m34_dmp, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/venn_f34_m34.tiff", height = 3000, width = 3000, cat.cex = 0.6, sub.pos = c(0.5, 0.5), fill = c("red", "blue", "green", "yellow"))
+venn_f34_m34_part <- get.venn.partitions(id_f34_m34_dmp)
+
+# venn for f33_m33
+id_f33_m33_dmp <- list(dmp_sig_up[[5]]$V1, dmp_sig_up[[6]]$V1, dmp_sig_down[[5]]$V1, dmp_sig_down[[6]]$V1)
+names(id_f33_m33_dmp) <- c("F.AD.33vsM.AD.33_up", "F.NL.33vsM.NL.33_up", "F.AD.33vsM.AD.33_down", "F.NL.33vsM.NL.33_down")
+venn.diagram(id_f33_m33_dmp, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/venn_f33_m33.tiff", height = 3000, width = 3000, cat.cex = 0.6, sub.pos = c(0.5, 0.5), fill = c("red", "blue", "green", "yellow"))
+venn_f33_m33_part <- get.venn.partitions(id_f33_m33_dmp)
+
+# venn for f23_m23
+id_f23_m23_dmp <- list(dmp_sig_up[[7]]$V1, dmp_sig_up[[8]]$V1, dmp_sig_down[[7]]$V1, dmp_sig_down[[8]]$V1)
+names(id_f23_m23_dmp) <- c("F.AD.23vsM.AD.23_up", "F.NL.23vsM.NL.23_up", "F.AD.23vsM.AD.23_down", "F.NL.23vsM.NL.23_down")
+venn.diagram(id_f23_m23_dmp, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/venn_f23_m23.tiff", height = 3000, width = 3000, cat.cex = 0.6, sub.pos = c(0.5, 0.5), fill = c("red", "blue", "green", "yellow"))
+venn_f23_m23_part <- get.venn.partitions(id_f23_m23_dmp)
+```
+
+Writing Venn partitions
+```{r writing Venn partitions}
+invisible(mapply(fwrite, list(venn_f_m_part, venn_f34_m34_part, venn_f33_m33_part, venn_f23_m23_part), paste0("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/", c("venn_f_m_part.csv", "venn_f34_m34_part.csv", "venn_f33_m33_part.csv", "venn_f23_m23_part.csv"))))
+```
+

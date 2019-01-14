@@ -1,0 +1,14 @@
+#BSUB -L /bin/bash
+#BSUB -n 12
+#BSUB -R span[ptile=12]
+#BSUB -R rusage[mem=4500]
+#BSUB -J methylation_data_preprocessing_with_batch_corrected.txt
+#BSUB -o methylation_data_preprocessing_with_batch_corrected.out
+#BSUB -e methylation_data_preprocessing_with_batch_corrected.err
+#BSUB -q premium
+#BSUB -P acc_zhangb03a
+#BSUB -W 48:00
+
+cd /sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/scripts/data_preprocessing
+module load R/3.5.1
+Rscript -e "rmarkdown::render('methylation_data_preprocessing_with_batch_corrected.Rmd')"
