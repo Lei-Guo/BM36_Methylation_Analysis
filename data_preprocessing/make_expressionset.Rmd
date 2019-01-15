@@ -17,7 +17,7 @@ library(Biobase)
 Reading adjusted beta values
 ```{r reading batch pmi race adjusted beta values, message = F}
 # reading batch pmi race adjusted beta values
-invisible(betaVal_batch_pmi_race_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_adjusted.tsv", data.table = F))
+invisible(betaVal_batch_pmi_race_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_adjusted.tsv", data.table = F))
 
 # naming the rows with the probe column
 rownames(betaVal_batch_pmi_race_adj) <- betaVal_batch_pmi_race_adj$V1
@@ -29,7 +29,7 @@ betaVal_batch_pmi_race_adj <- as.matrix(betaVal_batch_pmi_race_adj)
 
 ```{r reading batch pmi race age adjusted beta values, message = F}
 # reading batch pmi race age adjusted beta values
-invisible(betaVal_batch_pmi_race_age_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", data.table = F))
+invisible(betaVal_batch_pmi_race_age_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", data.table = F))
 
 # naming the rows with the probe column
 rownames(betaVal_batch_pmi_race_age_adj) <- betaVal_batch_pmi_race_age_adj$V1
@@ -41,7 +41,7 @@ betaVal_batch_pmi_race_age_adj <- as.matrix(betaVal_batch_pmi_race_age_adj)
 
 ```{r reading batch pmi race sex adjusted beta values, message = F}
 # reading batch pmi race sex adjusted beta values
-invisible(betaVal_batch_pmi_race_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", data.table = F))
+invisible(betaVal_batch_pmi_race_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", data.table = F))
 
 # naming the rows with the probe column
 rownames(betaVal_batch_pmi_race_sex_adj) <- betaVal_batch_pmi_race_sex_adj$V1
@@ -53,7 +53,7 @@ betaVal_batch_pmi_race_sex_adj <- as.matrix(betaVal_batch_pmi_race_sex_adj)
 
 ```{r reading batch pmi race sex age adjusted beta values, message = F}
 # reading batch pmi race sex age adjusted beta values
-invisible(betaVal_batch_pmi_race_age_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", data.table = F))
+invisible(betaVal_batch_pmi_race_age_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", data.table = F))
 
 # naming the rows with the probe column
 rownames(betaVal_batch_pmi_race_age_sex_adj) <- betaVal_batch_pmi_race_age_sex_adj$V1
@@ -67,7 +67,7 @@ betaVal_batch_pmi_race_age_sex_adj <- as.matrix(betaVal_batch_pmi_race_age_sex_a
 Reading adjusted M values
 ```{r reading batch pmi race adjusted M values, message = F}
 # reading batch pmi race adjusted M values
-invisible(MVal_batch_pmi_race_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_adjusted.tsv", data.table = F))
+invisible(MVal_batch_pmi_race_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_adjusted.tsv", data.table = F))
 
 # naming the rows with the probe column
 rownames(MVal_batch_pmi_race_adj) <- MVal_batch_pmi_race_adj$V1
@@ -79,7 +79,7 @@ MVal_batch_pmi_race_adj <- as.matrix(MVal_batch_pmi_race_adj)
 
 ```{r reading batch pmi race age adjusted M values, message = F}
 # reading batch pmi race age adjusted M values
-invisible(MVal_batch_pmi_race_age_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", data.table = F))
+invisible(MVal_batch_pmi_race_age_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", data.table = F))
 
 # naming the rows with the probe column
 rownames(MVal_batch_pmi_race_age_adj) <- MVal_batch_pmi_race_age_adj$V1
@@ -91,7 +91,7 @@ MVal_batch_pmi_race_age_adj <- as.matrix(MVal_batch_pmi_race_age_adj)
 
 ```{r reading batch pmi race sex adjusted M values, message = F}
 # reading batch pmi race sex adjusted M values
-invisible(MVal_batch_pmi_race_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", data.table = F))
+invisible(MVal_batch_pmi_race_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", data.table = F))
 
 # naming the rows with the probe column
 rownames(MVal_batch_pmi_race_sex_adj) <- MVal_batch_pmi_race_sex_adj$V1
@@ -103,7 +103,7 @@ MVal_batch_pmi_race_sex_adj <- as.matrix(MVal_batch_pmi_race_sex_adj)
 
 ```{r reading batch pmi race sex age adjusted M values, message = F}
 # reading batch pmi race sex age adjusted M values
-invisible(MVal_batch_pmi_race_age_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", data.table = F))
+invisible(MVal_batch_pmi_race_age_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", data.table = F))
 
 # naming the rows with the probe column
 rownames(MVal_batch_pmi_race_age_sex_adj) <- MVal_batch_pmi_race_age_sex_adj$V1
@@ -280,22 +280,22 @@ exprset_MVal_batch_pmi_race_sex_adj <- ExpressionSet(assayData = MVal_batch_pmi_
 
 Writing expressionsets
 ```{r writing expressionsets for beta values}
-saveRDS(exprset_betaVal_batch_pmi_race_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_batch_pmi_race_adjusted.rds")
+saveRDS(exprset_betaVal_batch_pmi_race_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_batch_pmi_race_adjusted.rds")
 
-saveRDS(exprset_betaVal_batch_pmi_race_age_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_batch_pmi_race_age_adjusted.rds")
+saveRDS(exprset_betaVal_batch_pmi_race_age_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_batch_pmi_race_age_adjusted.rds")
 
-saveRDS(exprset_betaVal_batch_pmi_race_age_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.rds")
+saveRDS(exprset_betaVal_batch_pmi_race_age_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.rds")
 
-saveRDS(exprset_betaVal_batch_pmi_race_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_batch_pmi_race_sex_adjusted.rds")
+saveRDS(exprset_betaVal_batch_pmi_race_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_batch_pmi_race_sex_adjusted.rds")
 ```
 
 ```{r writing expressionsets for M values}
-saveRDS(exprset_MVal_batch_pmi_race_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_adjusted.rds")
+saveRDS(exprset_MVal_batch_pmi_race_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_adjusted.rds")
 
-saveRDS(exprset_MVal_batch_pmi_race_age_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_age_adjusted.rds")
+saveRDS(exprset_MVal_batch_pmi_race_age_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_age_adjusted.rds")
 
-saveRDS(exprset_MVal_batch_pmi_race_age_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.rds")
+saveRDS(exprset_MVal_batch_pmi_race_age_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.rds")
 
-saveRDS(exprset_MVal_batch_pmi_race_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_sex_adjusted.rds")
+saveRDS(exprset_MVal_batch_pmi_race_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_batch_pmi_race_sex_adjusted.rds")
 ```
 

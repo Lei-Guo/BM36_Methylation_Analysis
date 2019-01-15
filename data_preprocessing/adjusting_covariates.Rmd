@@ -259,29 +259,29 @@ mVal_adjusted <- as.data.frame(t(mVal_t_resid))
 Wrting the adjusted mVals
 ```{r writing the adjusted mVals}
 # writing the sex-age-adjusted mVals
-fwrite(mVal_age_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/processed_data/M_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", row.names = T, sep = "\t")
+fwrite(mVal_age_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/processed_data/M_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", row.names = T, sep = "\t")
 
 # writing the age-adjusted mVals
-fwrite(mVal_age_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", row.names = T, sep = "\t")
+fwrite(mVal_age_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", row.names = T, sep = "\t")
 
 # writing the sex-adjusted mVals
-fwrite(mVal_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", row.names = T, sep = "\t")
+fwrite(mVal_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", row.names = T, sep = "\t")
 
 # writing the adjusted mVals
-fwrite(mVal_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_adjusted.tsv", row.names = T, sep = "\t")
+fwrite(mVal_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_batch_pmi_race_adjusted.tsv", row.names = T, sep = "\t")
 ```
 
 Wrting the adjusted betaVals
 ```{r writing the adjusted betaVals}
 # writing the sex-age-adjusted betaVals
-fwrite(betaVal_age_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", row.names = T, sep = "\t")
+fwrite(betaVal_age_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_sex_adjusted.tsv", row.names = T, sep = "\t")
 
 # writing the age-adjusted betaVals
-fwrite(betaVal_age_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", row.names = T, sep = "\t")
+fwrite(betaVal_age_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_age_adjusted.tsv", row.names = T, sep = "\t")
 
 # writing the sex-adjusted betaVals
-fwrite(betaVal_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", row.names = T, sep = "\t")
+fwrite(betaVal_sex_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_sex_adjusted.tsv", row.names = T, sep = "\t")
 
 # writing the adjusted betaVals
-fwrite(betaVal_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_adjusted.tsv", row.names = T, sep = "\t")
+fwrite(betaVal_adjusted, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_batch_pmi_race_adjusted.tsv", row.names = T, sep = "\t")
 ```
