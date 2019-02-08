@@ -1,0 +1,141 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Rscript -e "rmarkdown::render('correlation_analysis_probe_ad_traits.Rmd')"
+
+Loading packages
+```{r loading packages}
+library(data.table)
+library(Biobase)
+```
+
+
+Loading functions for matrix-matrix correlation analysis
+```{r loading functions for matrix-matrix correlation analysis}
+# get all indices of a matrix
+# for symetric matrix size is a number otherwise size=(row, col)
+getMatrixIndex = function(size, symmetric=T, diagonal=F)
+{
+   allidx = NULL
+
+   if(symmetric){
+      for(i in c(1:(size[1]-1)) ) {
+         iv = cbind(i, (i+1):size[1])
+         allidx = rbind(allidx, iv)
+      }
+      if(diagonal) {allidx = rbind(allidx, cbind(1:size[1], 1:size[1]) )}
+
+   } else {
+      for(i in c(1:(size[1])) ) {
+         iv = cbind(i, 1:(size[2]))
+         allidx = rbind(allidx, iv)
+      }
+   }
+
+   return (allidx)
+}
+
+
+simpleCorTest=function(x,y){
+signif( cor.test(x,y,method="p",use="p")$p.value ,2) 
+}
+
+# no of rows of amatrix is the same as the length of myvect
+corTest4multivects=function(myvect, amatrix){
+pvals = apply(amatrix, 2, simpleCorTest, y=myvect)
+#cat(pvals[], "\n")
+as.numeric(pvals)
+}
+
+# compute correlation coefficients (spearman, pearson), pvalues of the columns 
+corRhoPvalSpearmanPearson = function (datMatrix) {
+
+  rho=cor(datMatrix, method="pearson", use="complete.obs")
+  pval=apply(datMatrix, 2, corTest4multivects, datMatrix)
+
+  #datMatrixRank = apply(datMatrix, 2, rank)
+  rhoR=cor(datMatrix, method="spearman", use="complete.obs")
+  #pvalR=apply(datMatrixRank, 2, corTest4multivects, xdatMatrixRank)
+
+  midx = getMatrixIndex(size=dim(rho), symmetric=TRUE, diagonal=FALSE)
+  id1  = colnames(datMatrix)[midx[,1]]
+  corMatrix = cbind(colnames(datMatrix)[midx[,1]], colnames(datMatrix)[midx[,2]],
+              signif(rho[midx],3),signif(rhoR[midx],3), signif(pval[midx],3))
+  colnames(corMatrix) = c("TraitA", "TraitB", "rho_pearson", "rho_spearman", "pvalue")
+
+  return (corMatrix)
+
+}
+
+
+# compute correlation coefficients (spearman, pearson), pvalues of the columns 
+corRhoPvalSpearmanPearson_TwoMatrices = function (datMatrix, datMatrix2) {
+
+  rho=cor(datMatrix, datMatrix2, method="pearson", use="complete.obs")
+  pval=apply(datMatrix, 2, corTest4multivects, datMatrix2)
+  pval=t(pval)
+
+  datMatrixRank = apply(datMatrix, 2, rank)
+  datMatrixRank = matrix(as.integer(datMatrixRank), nrow=nrow(datMatrixRank))
+  #datMatrixRankT = t(datMatrixRank)
+
+  datMatrixRank2 = apply(datMatrix2, 2, rank)
+  datMatrixRank2 = matrix(as.integer(datMatrixRank2), nrow=nrow(datMatrixRank2))
+  #datMatrixRankT2 = t(datMatrixRank2)
+
+  rhoR=cor(datMatrixRank, datMatrixRank2, method="pearson", use="complete.obs")
+  pvalR=apply(datMatrixRank, 2, corTest4multivects, datMatrixRank2)
+  pvalR=t(pvalR)
+
+  midx = getMatrixIndex(size=dim(rho), symmetric=FALSE, diagonal=TRUE)
+  id1  = colnames(datMatrix)[midx[,1]]
+  corMatrix = cbind(colnames(datMatrix)[midx[,1]], colnames(datMatrix2)[midx[,2]],
+              signif(rho[midx],3),signif(pval[midx],3), signif(rhoR[midx],3), signif(pvalR[midx],3))
+  colnames(corMatrix) = c("TraitA", "TraitB", "rho_pearson", "pvalue_pearson", "rho_spearman", "pvalue_spearman")
+
+  return (corMatrix)
+
+}
+```
+
+
+Reading M values
+```{r reading M values}
+# read non-sex-adjusted expressionset
+mVal_age_adj_exprset <- readRDS("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/exprset_M_Values_QCed_normlized_plate_pmi_race_age_adjusted.rds")
+
+# get mvalue matrix
+mVal_age_adj_mx <- exprs(mVal_age_adj_exprset)
+
+# ge meta data
+mVal_age_adj_meta <- pData(mVal_age_adj_exprset)
+# only keep desired AD traits
+mVal_age_adj_meta <- mVal_age_adj_meta[, c("CDR", "PlaqueMean", "bbscore", "CERAD")]
+```
+
+
+Correlation analysis between probes and AD traits
+```{r Correlation analysis between probes and AD traits}
+# transpose mvalue matrix
+mVal_age_adj_mx_t <- t(mVal_age_adj_mx)
+
+# convert CERAD to numerical
+map_cerad <- setNames(seq(4), c("NL", "possAD", "probAD", "defAD"))
+mVal_age_adj_meta$CERAD <- map_cerad[mVal_age_adj_meta$CERAD]
+
+# correlation test
+cor_results <- as.data.frame(corRhoPvalSpearmanPearson_TwoMatrices(mVal_age_adj_mx_t, mVal_age_adj_meta))
+
+# BH adjust for the p value
+cor_results$pvalue_pearson_adj <- p.adjust(cor_results$pvalue_pearson, method = "BH")
+
+cor_results$pvalue_spearman_adj <- p.adjust(cor_results$pvalue_spearman, method = "BH")
+```
+
+Writing the results
+```{r}
+fwrite(cor_results, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/correlation_Results/methy_probe_ad_trait_cor_results.csv")
+```
+

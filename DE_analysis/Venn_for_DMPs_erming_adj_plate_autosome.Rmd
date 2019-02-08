@@ -1,0 +1,73 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Rscript -e "rmarkdown::render('Venn_for_DMPs_erming_adj_plate_autosome.Rmd')"
+
+Loading packages
+```{r Loading packages}
+library(data.table)
+library(VennDiagram)
+```
+
+
+Reading DMP results
+```{r Reading DMP results}
+rm(list=ls())
+
+DMP_path <- paste0("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/", c("DMP_ad_nl.tsv", "DMP_fad_mad.tsv", "DMP_fnl_mnl.tsv"))
+
+DMPs <- lapply(DMP_path, fread)
+names(DMPs) <- c("ad_nl", "fad_mad", "fnl_mnl")
+```
+
+
+Subsetting significant results
+```{r Subsetting significant results}
+DMPs_sig <- lapply(DMPs, function(x) x[adj.P.Val < 0.05])
+names(DMPs_sig) <- c("ad_nl", "fad_mad", "fnl_mnl")
+```
+
+
+Calculating significant hyper/hypomethylated sites on auto/sex chromosomes
+```{r DMPs on chromosomes}
+# All significant DMPs
+# number of hypermethylated probes
+sapply(DMPs_sig, function(x) nrow(x[logFC > 0]))
+# number of hypomethylated probes
+sapply(DMPs_sig, function(x) nrow(x[logFC < 0]))
+
+# Significant DMPs on X chromosome
+# number of hypermethylated probes on X chromosomes
+sapply(DMPs_sig, function(x) nrow(x[logFC > 0 & x$chr == "chrX"]))
+# number of hypomethylated probes on X chromosomes
+sapply(DMPs_sig, function(x) nrow(x[logFC < 0 & x$chr == "chrX"]))
+
+# Significant DMPs on Y chromosome
+# number of hypermethylated probes on Y chromosomes
+sapply(DMPs_sig, function(x) nrow(x[logFC > 0 & x$chr == "chrY"]))
+# number of hypomethylated probes on Y chromosomes
+sapply(DMPs_sig, function(x) nrow(x[logFC < 0 & x$chr == "chrY"]))
+
+# Significant DMPs on autosomes
+sapply(DMPs_sig, function(x) nrow(x[logFC > 0 & chr != "chrX" & chr != "chrY"]))
+sapply(DMPs_sig, function(x) nrow(x[logFC < 0 & chr != "chrX" & chr != "chrY"]))
+```
+
+
+Venn for DMPs on autosomes
+```{r Venn for DMPs on autosomes}
+# venn for f_m_ad_nl
+DMPs_sig_autosome <- lapply(DMPs_sig, function(x) x[chr != "chrX" & chr != "chrY"])
+
+id_f_m_dmp_ad_nl <- list(DMPs_sig_autosome[[1]]$V1, DMPs_sig_autosome[[2]]$V1, DMPs_sig_autosome[[3]]$V1)
+names(id_f_m_dmp_ad_nl) <- c("ADvsNL", "F.ADvsM.AD", "F.NLvsM.NL")
+
+venn.diagram(id_f_m_dmp_ad_nl, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/id_f_m_dmp_ad_nl_autosome.tiff", height = 3000, width = 3000, cat.cex = 0.6, sub.pos = c(0.5, 0.5), fill = c("red", "blue", "green"))
+venn_f_m_ad_nl_part <- get.venn.partitions(id_f_m_dmp_ad_nl)
+
+# writing Venn part
+fwrite(venn_f_m_ad_nl_part, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/venn_f_m_ad_nl_autosome_part.csv")
+```
+

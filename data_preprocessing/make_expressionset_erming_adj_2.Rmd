@@ -1,0 +1,197 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Render the notebook with commandline Rscript -e "rmarkdown::render('make_expressionset_erming_adj_2.Rmd')"
+
+```{r loading packages, message = F}
+library(data.table)
+library(readxl)
+library(stringr)
+library(limma)
+library(Biobase)
+```
+
+
+Reading adjusted M values
+```{r reading batch pmi race adjusted M values, message = F}
+# reading batch pmi race adjusted M values
+invisible(MVal_plate_pmi_race_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/M_Values_QCed_normlized_plate_pmi_race_adjusted.tsv", data.table = F))
+
+# naming the rows with the probe column
+rownames(MVal_plate_pmi_race_adj) <- MVal_plate_pmi_race_adj$V1
+MVal_plate_pmi_race_adj <- MVal_plate_pmi_race_adj[, -1]
+
+# convert MVal_sex_adj to matrix
+MVal_plate_pmi_race_adj <- as.matrix(MVal_plate_pmi_race_adj)
+```
+
+```{r reading batch pmi race age adjusted M values, message = F}
+# reading batch pmi race age adjusted M values
+invisible(MVal_plate_pmi_race_age_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/M_Values_QCed_normlized_plate_pmi_race_age_adjusted.tsv", data.table = F))
+
+# naming the rows with the probe column
+rownames(MVal_plate_pmi_race_age_adj) <- MVal_plate_pmi_race_age_adj$V1
+MVal_plate_pmi_race_age_adj <- MVal_plate_pmi_race_age_adj[, -1]
+
+# convert MVal_sex_adj to matrix
+MVal_plate_pmi_race_age_adj <- as.matrix(MVal_plate_pmi_race_age_adj)
+```
+
+```{r reading batch pmi race sex adjusted M values, message = F}
+# reading batch pmi race sex adjusted M values
+invisible(MVal_plate_pmi_race_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/M_Values_QCed_normlized_plate_pmi_race_sex_adjusted.tsv", data.table = F))
+
+# naming the rows with the probe column
+rownames(MVal_plate_pmi_race_sex_adj) <- MVal_plate_pmi_race_sex_adj$V1
+MVal_plate_pmi_race_sex_adj <- MVal_plate_pmi_race_sex_adj[, -1]
+
+# convert MVal_sex_adj to matrix
+MVal_plate_pmi_race_sex_adj <- as.matrix(MVal_plate_pmi_race_sex_adj)
+```
+
+```{r reading batch pmi race sex age adjusted M values, message = F}
+# reading batch pmi race sex age adjusted M values
+invisible(MVal_plate_pmi_race_age_sex_adj <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/M_Values_QCed_normlized_plate_pmi_race_age_sex_adjusted.tsv", data.table = F))
+
+# naming the rows with the probe column
+rownames(MVal_plate_pmi_race_age_sex_adj) <- MVal_plate_pmi_race_age_sex_adj$V1
+MVal_plate_pmi_race_age_sex_adj <- MVal_plate_pmi_race_age_sex_adj[, -1]
+
+# convert MVal_sex_adj to matrix
+MVal_plate_pmi_race_age_sex_adj <- as.matrix(MVal_plate_pmi_race_age_sex_adj)
+```
+
+
+Reading Meta files
+```{r reading meta information}
+# read methylation meta info
+meta_meth <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/meta_meth.csv")
+
+# read RNAseq meta info
+meta_rnaseq <- fread("/sc/orga/projects/zhangb03a/shared/msbb-seq/Data/mixed_model_correction_updated/msbb.meta.BM_36.tsv")
+
+#edit APOE and diagnosis format
+meta_rnaseq$APOE <- gsub("/", "", gsub("e","", meta_rnaseq$APOE))
+meta_rnaseq$APOE[is.na(meta_rnaseq$APOE)] <- "Unknown"
+
+# define AD by Plaque mean (Erming)
+meta_rnaseq$pq_ad <- ifelse(meta_rnaseq$PlaqueMean > 9, "AD", ifelse(meta_rnaseq$PlaqueMean == 0, "Normal", "Moderate"))
+
+#add new group columns
+meta_rnaseq[, c("sex.ad.apoe_pqad", "ad.apoe_pqad", "sex.ad_pqad") := list(paste(SEX_inferred, pq_ad, APOE, sep = "."), paste(pq_ad, APOE, sep = "."), paste(SEX_inferred, pq_ad, sep = "."))]
+```
+
+Mapping IDs between meta_meth and meta_rnaseq
+```{r mapping IDs between meta_meth and meta_rnaseq}
+#read id map file for methylation meta file
+id_map_file <- read_xlsx("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/MethylationBarcodeXSubNumXMinghuiXWang.xlsx", skip = 10)
+setDT(id_map_file)
+#pad the SubNum to 10 digits
+id_map_file$SubNum <- str_pad(id_map_file$SubNum, 10, "left", 0)
+
+id_map_file$SubNum <- paste0("AMPAD_MSSM_", id_map_file$SubNum)
+
+#match IDs for meta_meth
+meta_meth$SynapseID <- id_map_file$SubNum[match(meta_meth$Sample_Name, id_map_file$Sample_Name_Barcode)]
+
+#ID mapping between meta_rnaseq & meta_meth
+ID_overlap <- intersect(meta_meth$SynapseID, meta_rnaseq$SynapseId)
+
+#subset meta_meth by ID_overlap
+meta_meth <- meta_meth[SynapseID %in% ID_overlap]
+
+# add sample ID column to meta_meth
+meta_meth$SampleID <- paste(meta_meth$Sentrix_ID, meta_meth$Sentrix_Position, sep = "_")
+
+# subset meta_rnaseq by ID_overlap
+meta_rnaseq <- meta_rnaseq[SynapseId %in% ID_overlap]
+
+# add sample ID column to meta_rnaseq
+meta_rnaseq$SampleID <- meta_meth$SampleID[match(meta_rnaseq$SynapseId, meta_meth$SynapseID)]
+
+# add another sample ID column to meta_rnaseq
+meta_rnaseq$SampleID_2 <- id_map_file$Sample_ID[match(meta_rnaseq$SynapseId, id_map_file$SubNum)]
+
+# add Sample batch column to meta_rnaseq
+meta_rnaseq$Sentrix_ID <- meta_meth$Sentrix_ID[match(meta_rnaseq$SynapseId, meta_meth$SynapseID)]
+```
+
+
+Removing samples with ambiguous sex and AD info
+```{r}
+meta_rnaseq <- meta_rnaseq[!SampleID_2 %in% c("PQDW544", "TVUF620", "KAST417", "DLUH936", "EOYS019") ]
+```
+
+
+Matching sample order between meta_rnaseq and beta/m matricies
+```{r matching sample order between meta_rnaseq and beta/m matricies}
+# check if column order is same for all beta matricies
+sapply(list(colnames(MVal_plate_pmi_race_adj), colnames(MVal_plate_pmi_race_age_adj), colnames(MVal_plate_pmi_race_sex_adj)), identical, colnames(MVal_plate_pmi_race_age_sex_adj))
+
+# match meta_rnaseq and MVal_plate_pmi_race_adj sample order
+meta_rnaseq <- meta_rnaseq[match(colnames(MVal_plate_pmi_race_adj), meta_rnaseq$SampleID), ]
+setDF(meta_rnaseq)
+rownames(meta_rnaseq) <- meta_rnaseq$SampleID
+```
+
+
+
+Making expressionset for M values
+```{r assembling expressionset for MVal_plate_pmi_race_adj}
+# check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_adj are same
+identical(colnames(MVal_plate_pmi_race_adj), rownames(meta_rnaseq))
+
+# create meta info for the expressionset
+phenoData_MVal_plate_pmi_race_adj <- new("AnnotatedDataFrame", data = meta_rnaseq)
+
+# construct an expressionset for MVal_plate_pmi_race_adj
+exprset_MVal_plate_pmi_race_adj <- ExpressionSet(assayData = MVal_plate_pmi_race_adj, phenoData = phenoData_MVal_plate_pmi_race_adj)
+```
+
+```{r assembling expressionset for MVal_plate_pmi_race_age_adj}
+# check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_age_adj are same
+identical(colnames(MVal_plate_pmi_race_age_adj), rownames(meta_rnaseq))
+
+# create meta info for the expressionset
+phenoData_MVal_plate_pmi_race_age_adj <- new("AnnotatedDataFrame", data = meta_rnaseq)
+
+# construct an expressionset for MVal_plate_pmi_race_age_adj
+exprset_MVal_plate_pmi_race_age_adj <- ExpressionSet(assayData = MVal_plate_pmi_race_age_adj, phenoData = phenoData_MVal_plate_pmi_race_age_adj)
+```
+
+```{r assembling expressionset for MVal_plate_pmi_race_age_sex_adj}
+# check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_age_sex_adj are same
+identical(colnames(MVal_plate_pmi_race_age_sex_adj), rownames(meta_rnaseq))
+
+# create meta info for the expressionset
+phenoData_MVal_plate_pmi_race_age_sex_adj <- new("AnnotatedDataFrame", data = meta_rnaseq)
+
+# construct an expressionset for MVal_plate_pmi_race_age_sex_adj
+exprset_MVal_plate_pmi_race_age_sex_adj <- ExpressionSet(assayData = MVal_plate_pmi_race_age_sex_adj, phenoData = phenoData_MVal_plate_pmi_race_age_sex_adj)
+```
+
+```{r assembling expressionset for MVal_plate_pmi_race_sex_adj}
+# check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_sex_adj are same
+identical(colnames(MVal_plate_pmi_race_sex_adj), rownames(meta_rnaseq))
+
+# create meta info for the expressionset
+phenoData_MVal_plate_pmi_race_sex_adj <- new("AnnotatedDataFrame", data = meta_rnaseq)
+
+# construct an expressionset for MVal_plate_pmi_race_sex_adj
+exprset_MVal_plate_pmi_race_sex_adj <- ExpressionSet(assayData = MVal_plate_pmi_race_sex_adj, phenoData = phenoData_MVal_plate_pmi_race_sex_adj)
+```
+
+
+Writing expressionsets
+```{r writing expressionsets for M values}
+saveRDS(exprset_MVal_plate_pmi_race_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/exprset_M_Values_QCed_normlized_plate_pmi_race_adjusted.rds")
+
+saveRDS(exprset_MVal_plate_pmi_race_age_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/exprset_M_Values_QCed_normlized_plate_pmi_race_age_adjusted.rds")
+
+saveRDS(exprset_MVal_plate_pmi_race_age_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/exprset_M_Values_QCed_normlized_plate_pmi_race_age_sex_adjusted.rds")
+
+saveRDS(exprset_MVal_plate_pmi_race_sex_adj, file = "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/exprset_M_Values_QCed_normlized_plate_pmi_race_sex_adjusted.rds")
+```
+

@@ -146,7 +146,7 @@ $(document).ready(function () {
 </style>
 <script>
 $(document).ready(function () {
-  window.initializeSourceEmbed("make_expressionset.Rmd");
+  window.initializeSourceEmbed("DMP_GO_KEGG.Rmd");
   window.initializeCodeFolding("show" === "show");
 });
 </script>
@@ -176,399 +176,92 @@ $(document).ready(function () {
 
 
 <!-- rnb-text-begin -->
-<p>Render the notebook with commandline Rscript -e “rmarkdown::render(‘make_expressionset.Rmd’)”</p>
+<p>Rscript -e “rmarkdown::render(‘DMP_GO_KEGG.Rmd’)”</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbImxpYnJhcnkoZGF0YS50YWJsZSkiLCJsaWJyYXJ5KHJlYWR4bCkiLCJsaWJyYXJ5KHN0cmluZ3IpIiwibGlicmFyeShsaW1tYSkiLCJsaWJyYXJ5KEJpb2Jhc2UpIl19 -->
+<!-- rnb-source-begin eyJkYXRhIjpbImxpYnJhcnkoZGF0YS50YWJsZSkiLCJsaWJyYXJ5KG1pc3NNZXRoeWwpIiwiI2xpYnJhcnkoSWxsdW1pbmFIdW1hbk1ldGh5bGF0aW9uRVBJQ2Fubm8uaWxtMTBiNC5oZzE5KSIsImxpYnJhcnkoSWxsdW1pbmFIdW1hbk1ldGh5bGF0aW9uRVBJQ2Fubm8uaWxtMTBiMi5oZzE5KSIsImxpYnJhcnkoc3RyaW5ncikiXX0= -->
 <pre class="r"><code>library(data.table)
-library(readxl)
-library(stringr)
-library(limma)
-library(Biobase)</code></pre>
+library(missMethyl)
+#library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+library(IlluminaHumanMethylationEPICanno.ilm10b2.hg19)
+library(stringr)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>Reading adjusted beta values</p>
+<p>GO analysis for DMPs (AD-NL)</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZGp1c3RlZCBiZXRhIHZhbHVlcyIsImludmlzaWJsZShiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBmcmVhZChcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzL0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopIDwtIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqJFYxIiwiYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGpbLCAtMV0iLCIiLCIjIGNvbnZlcnQgYmV0YVZhbF9zZXhfYWRqIHRvIG1hdHJpeCIsImJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIGFzLm1hdHJpeChiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race adjusted beta values
-invisible(betaVal_plate_pmi_race_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_plate_pmi_race_adjusted.tsv&quot;, data.table = F))
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgZm9yIGFkX25sIiwiZG1wX2FkX25sIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9ETVBfUmVzdWx0cy9ETVBfZXJtaW5nX2Fkal9wbGF0ZS9ETVBfYWRfbmwudHN2XCIpIiwiIiwiIyBnZXQgc2lnbmlmaWNhbnQgRE1QcyIsImRtcF9zaWdfYWRfbmxfcHJvYmUgPC0gKHN1YnNldChkbXBfYWRfbmwsIGFkai5QLlZhbCA8IDAuMDUpKSRWMSIsIiIsIiMgZ2V0IGFsbCBwcm9iZXMiLCJkbXBfYWxsX2FkX25sX3Byb2JlIDwtIChkbXBfYWRfbmwpJFYxIiwiIiwiIyBnZXQgR08gdGVybXMiLCJnc3RfYWRfbmxfZ28gPC0gZ29tZXRoKHNpZy5jcGc9ZG1wX3NpZ19hZF9ubF9wcm9iZSwgYWxsLmNwZz1kbXBfYWxsX2FkX25sX3Byb2JlLCBjb2xsZWN0aW9uID0gXCJHT1wiLCBhcnJheS50eXBlID0gXCJFUElDXCIpIl19 -->
+<pre class="r"><code># for ad_nl
+dmp_ad_nl &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/DMP_ad_nl.tsv&quot;)
 
-# naming the rows with the probe column
-rownames(betaVal_plate_pmi_race_adj) &lt;- betaVal_plate_pmi_race_adj$V1
-betaVal_plate_pmi_race_adj &lt;- betaVal_plate_pmi_race_adj[, -1]
+# get significant DMPs
+dmp_sig_ad_nl_probe &lt;- (subset(dmp_ad_nl, adj.P.Val &lt; 0.05))$V1
 
-# convert betaVal_sex_adj to matrix
-betaVal_plate_pmi_race_adj &lt;- as.matrix(betaVal_plate_pmi_race_adj)</code></pre>
+# get all probes
+dmp_all_ad_nl_probe &lt;- (dmp_ad_nl)$V1
+
+# get GO terms
+gst_ad_nl_go &lt;- gometh(sig.cpg=dmp_sig_ad_nl_probe, all.cpg=dmp_all_ad_nl_probe, collection = &quot;GO&quot;, array.type = &quot;EPIC&quot;)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZ2UgYWRqdXN0ZWQgYmV0YSB2YWx1ZXMiLCJpbnZpc2libGUoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vQmV0YVZhbHMvQmV0YV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGokVjEiLCJiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqWywgLTFdIiwiIiwiIyBjb252ZXJ0IGJldGFWYWxfc2V4X2FkaiB0byBtYXRyaXgiLCJiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gYXMubWF0cml4KGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race age adjusted beta values
-invisible(betaVal_plate_pmi_race_age_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_plate_pmi_race_age_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(betaVal_plate_pmi_race_age_adj) &lt;- betaVal_plate_pmi_race_age_adj$V1
-betaVal_plate_pmi_race_age_adj &lt;- betaVal_plate_pmi_race_age_adj[, -1]
-
-# convert betaVal_sex_adj to matrix
-betaVal_plate_pmi_race_age_adj &lt;- as.matrix(betaVal_plate_pmi_race_age_adj)</code></pre>
+<!-- rnb-warning-begin eyJkYXRhIjoiV2FybmluZyBpbiBhbGlhczJTeW1ib2xUYWJsZShmbGF0JHN5bWJvbCk6IE11bHRpcGxlIHN5bWJvbHMgaWdub3JlZCBmb3Igb25lXG5vciBtb3JlIGFsaWFzZXNcbiJ9 -->
+<pre><code>Warning in alias2SymbolTable(flat$symbol): Multiple symbols ignored for one
+or more aliases</code></pre>
+<!-- rnb-warning-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgZ2V0IGtlZ2cgcGF0aHdheXMiLCJnc3RfYWRfbmxfa2VnZyA8LSBnb21ldGgoc2lnLmNwZz1kbXBfc2lnX2FkX25sX3Byb2JlLCBhbGwuY3BnPWRtcF9hbGxfYWRfbmxfcHJvYmUsIGNvbGxlY3Rpb24gPSBcIktFR0dcIiwgYXJyYXkudHlwZSA9IFwiRVBJQ1wiKSJdfQ== -->
+<pre class="r"><code># get kegg pathways
+gst_ad_nl_kegg &lt;- gometh(sig.cpg=dmp_sig_ad_nl_probe, all.cpg=dmp_all_ad_nl_probe, collection = &quot;KEGG&quot;, array.type = &quot;EPIC&quot;)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWRqdXN0ZWQgYmV0YSB2YWx1ZXMiLCJpbnZpc2libGUoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vQmV0YVZhbHMvQmV0YV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGokVjEiLCJiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqWywgLTFdIiwiIiwiIyBjb252ZXJ0IGJldGFWYWxfc2V4X2FkaiB0byBtYXRyaXgiLCJiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gYXMubWF0cml4KGJldGFWYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race sex adjusted beta values
-invisible(betaVal_plate_pmi_race_sex_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_plate_pmi_race_sex_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(betaVal_plate_pmi_race_sex_adj) &lt;- betaVal_plate_pmi_race_sex_adj$V1
-betaVal_plate_pmi_race_sex_adj &lt;- betaVal_plate_pmi_race_sex_adj[, -1]
-
-# convert betaVal_sex_adj to matrix
-betaVal_plate_pmi_race_sex_adj &lt;- as.matrix(betaVal_plate_pmi_race_sex_adj)</code></pre>
-<!-- rnb-source-end -->
+<!-- rnb-warning-begin eyJkYXRhIjoiV2FybmluZyBpbiBhbGlhczJTeW1ib2xUYWJsZShmbGF0JHN5bWJvbCk6IE11bHRpcGxlIHN5bWJvbHMgaWdub3JlZCBmb3Igb25lXG5vciBtb3JlIGFsaWFzZXNcbiJ9 -->
+<pre><code>Warning in alias2SymbolTable(flat$symbol): Multiple symbols ignored for one
+or more aliases</code></pre>
+<!-- rnb-warning-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWdlIGFkanVzdGVkIGJldGEgdmFsdWVzIiwiaW52aXNpYmxlKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gZnJlYWQoXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9CZXRhVmFscy9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikgPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiRWMSIsImJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkalssIC0xXSIsIiIsIiMgY29udmVydCBiZXRhVmFsX3NleF9hZGogdG8gbWF0cml4IiwiYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBhcy5tYXRyaXgoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race sex age adjusted beta values
-invisible(betaVal_plate_pmi_race_age_sex_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_plate_pmi_race_age_sex_adjusted.tsv&quot;, data.table = F))
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZCB0aGUgVmVubiBwYXJ0IGZpbGUiLCJ2ZW5uX3BhcnRfYWRubF9mbSA8LSBmcmVhZChcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvRE1QX1Jlc3VsdHMvRE1QX2VybWluZ19hZGpfcGxhdGUvdmVubl9mX21fYWRfbmxfcGFydC5jc3ZcIikiLCIiLCIjIGdldCB0aGUgb3ZlcmxhcCBwYXJ0ICgxNywgNjEsIDI1LCAxNzY4KSIsImRtcF9vdmVybGFwIDwtIHVubGlzdCh2ZW5uX3BhcnRfYWRubF9mbVtjKDEsIDMsIDUsIDYpLCA1XSkiLCJkbXBfb3ZlcmxhcCA8LSB1bmxpc3QobGFwcGx5KGRtcF9vdmVybGFwLCBzdHJfc3BsaXQsIFwiXFxcXHxcIikpIiwiIiwiIyBnZXQgR08gdGVybXMiLCJnc3Rfb3ZlcmxhcF9nbyA8LSBnb21ldGgoc2lnLmNwZz1kbXBfb3ZlcmxhcCwgYWxsLmNwZz1kbXBfYWxsX2FkX25sX3Byb2JlLCBjb2xsZWN0aW9uID0gXCJHT1wiLCBhcnJheS50eXBlID0gXCJFUElDXCIpIl19 -->
+<pre class="r"><code># read the Venn part file
+venn_part_adnl_fm &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/venn_f_m_ad_nl_part.csv&quot;)
 
-# naming the rows with the probe column
-rownames(betaVal_plate_pmi_race_age_sex_adj) &lt;- betaVal_plate_pmi_race_age_sex_adj$V1
-betaVal_plate_pmi_race_age_sex_adj &lt;- betaVal_plate_pmi_race_age_sex_adj[, -1]
+# get the overlap part (17, 61, 25, 1768)
+dmp_overlap &lt;- unlist(venn_part_adnl_fm[c(1, 3, 5, 6), 5])
+dmp_overlap &lt;- unlist(lapply(dmp_overlap, str_split, &quot;\\|&quot;))
 
-# convert betaVal_sex_adj to matrix
-betaVal_plate_pmi_race_age_sex_adj &lt;- as.matrix(betaVal_plate_pmi_race_age_sex_adj)</code></pre>
+# get GO terms
+gst_overlap_go &lt;- gometh(sig.cpg=dmp_overlap, all.cpg=dmp_all_ad_nl_probe, collection = &quot;GO&quot;, array.type = &quot;EPIC&quot;)</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-warning-begin eyJkYXRhIjoiV2FybmluZyBpbiBhbGlhczJTeW1ib2xUYWJsZShmbGF0JHN5bWJvbCk6IE11bHRpcGxlIHN5bWJvbHMgaWdub3JlZCBmb3Igb25lXG5vciBtb3JlIGFsaWFzZXNcbiJ9 -->
+<pre><code>Warning in alias2SymbolTable(flat$symbol): Multiple symbols ignored for one
+or more aliases</code></pre>
+<!-- rnb-warning-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgZ2V0IGtlZ2cgcGF0aHdheXMiLCJnc3Rfb3ZlcmxhcF9rZWdnIDwtIGdvbWV0aChzaWcuY3BnPWRtcF9vdmVybGFwLCBhbGwuY3BnPWRtcF9hbGxfYWRfbmxfcHJvYmUsIGNvbGxlY3Rpb24gPSBcIktFR0dcIiwgYXJyYXkudHlwZSA9IFwiRVBJQ1wiKSJdfQ== -->
+<pre class="r"><code># get kegg pathways
+gst_overlap_kegg &lt;- gometh(sig.cpg=dmp_overlap, all.cpg=dmp_all_ad_nl_probe, collection = &quot;KEGG&quot;, array.type = &quot;EPIC&quot;)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-warning-begin eyJkYXRhIjoiV2FybmluZyBpbiBhbGlhczJTeW1ib2xUYWJsZShmbGF0JHN5bWJvbCk6IE11bHRpcGxlIHN5bWJvbHMgaWdub3JlZCBmb3Igb25lXG5vciBtb3JlIGFsaWFzZXNcbiJ9 -->
+<pre><code>Warning in alias2SymbolTable(flat$symbol): Multiple symbols ignored for one
+or more aliases</code></pre>
+<!-- rnb-warning-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>Reading adjusted M values</p>
+<p>Writing the results</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZGp1c3RlZCBNIHZhbHVlcyIsImludmlzaWJsZShNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBmcmVhZChcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzL01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqJFYxIiwiTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGpbLCAtMV0iLCIiLCIjIGNvbnZlcnQgTVZhbF9zZXhfYWRqIHRvIG1hdHJpeCIsIk1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIGFzLm1hdHJpeChNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race adjusted M values
-invisible(MVal_plate_pmi_race_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_plate_pmi_race_adjusted.tsv&quot;, data.table = F))
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgZm9yIGFkLW5sIiwiZndyaXRlKGdzdF9hZF9ubF9nbywgXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL0RNUF9SZXN1bHRzL0RNUF9lcm1pbmdfYWRqX3BsYXRlL0dPX2RtcF9hZF9ubC5jc3ZcIikiLCJmd3JpdGUoZ3N0X2FkX25sX2tlZ2csIFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9ETVBfUmVzdWx0cy9ETVBfZXJtaW5nX2Fkal9wbGF0ZS9LRUdHX2RtcF9hZF9ubC5jc3ZcIikiLCIiLCIjIGZvciBvdmVybGFwcyAoYWQtbmwgJiBmICYgbSkiLCJmd3JpdGUoZ3N0X292ZXJsYXBfZ28sIFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9ETVBfUmVzdWx0cy9ETVBfZXJtaW5nX2Fkal9wbGF0ZS9HT19kbXBfYWRubF9mbV9vdmVybGFwLmNzdlwiKSIsImZ3cml0ZShnc3Rfb3ZlcmxhcF9rZWdnLCBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvRE1QX1Jlc3VsdHMvRE1QX2VybWluZ19hZGpfcGxhdGUvS0VHR19kbXBfYWRubF9mbV9vdmVybGFwLmNzdlwiKSJdfQ== -->
+<pre class="r"><code># for ad-nl
+fwrite(gst_ad_nl_go, &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/GO_dmp_ad_nl.csv&quot;)
+fwrite(gst_ad_nl_kegg, &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/KEGG_dmp_ad_nl.csv&quot;)
 
-# naming the rows with the probe column
-rownames(MVal_plate_pmi_race_adj) &lt;- MVal_plate_pmi_race_adj$V1
-MVal_plate_pmi_race_adj &lt;- MVal_plate_pmi_race_adj[, -1]
-
-# convert MVal_sex_adj to matrix
-MVal_plate_pmi_race_adj &lt;- as.matrix(MVal_plate_pmi_race_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZ2UgYWRqdXN0ZWQgTSB2YWx1ZXMiLCJpbnZpc2libGUoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSA8LSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGokVjEiLCJNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqWywgLTFdIiwiIiwiIyBjb252ZXJ0IE1WYWxfc2V4X2FkaiB0byBtYXRyaXgiLCJNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gYXMubWF0cml4KE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race age adjusted M values
-invisible(MVal_plate_pmi_race_age_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_plate_pmi_race_age_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(MVal_plate_pmi_race_age_adj) &lt;- MVal_plate_pmi_race_age_adj$V1
-MVal_plate_pmi_race_age_adj &lt;- MVal_plate_pmi_race_age_adj[, -1]
-
-# convert MVal_sex_adj to matrix
-MVal_plate_pmi_race_age_adj &lt;- as.matrix(MVal_plate_pmi_race_age_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWRqdXN0ZWQgTSB2YWx1ZXMiLCJpbnZpc2libGUoTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSA8LSBNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGokVjEiLCJNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqWywgLTFdIiwiIiwiIyBjb252ZXJ0IE1WYWxfc2V4X2FkaiB0byBtYXRyaXgiLCJNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gYXMubWF0cml4KE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race sex adjusted M values
-invisible(MVal_plate_pmi_race_sex_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_plate_pmi_race_sex_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(MVal_plate_pmi_race_sex_adj) &lt;- MVal_plate_pmi_race_sex_adj$V1
-MVal_plate_pmi_race_sex_adj &lt;- MVal_plate_pmi_race_sex_adj[, -1]
-
-# convert MVal_sex_adj to matrix
-MVal_plate_pmi_race_sex_adj &lt;- as.matrix(MVal_plate_pmi_race_sex_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWdlIGFkanVzdGVkIE0gdmFsdWVzIiwiaW52aXNpYmxlKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gZnJlYWQoXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9NVmFscy9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikgPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiRWMSIsIk1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkalssIC0xXSIsIiIsIiMgY29udmVydCBNVmFsX3NleF9hZGogdG8gbWF0cml4IiwiTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBhcy5tYXRyaXgoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race sex age adjusted M values
-invisible(MVal_plate_pmi_race_age_sex_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_plate_pmi_race_age_sex_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(MVal_plate_pmi_race_age_sex_adj) &lt;- MVal_plate_pmi_race_age_sex_adj$V1
-MVal_plate_pmi_race_age_sex_adj &lt;- MVal_plate_pmi_race_age_sex_adj[, -1]
-
-# convert MVal_sex_adj to matrix
-MVal_plate_pmi_race_age_sex_adj &lt;- as.matrix(MVal_plate_pmi_race_age_sex_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Reading Meta files</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZCBtZXRoeWxhdGlvbiBtZXRhIGluZm8iLCJtZXRhX21ldGggPC0gZnJlYWQoXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Jhd19kYXRhL21ldGFfbWV0aC5jc3ZcIikiLCIiLCIjIHJlYWQgUk5Bc2VxIG1ldGEgaW5mbyIsIm1ldGFfcm5hc2VxIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL3NoYXJlZC9tc2JiLXNlcS9EYXRhL21peGVkX21vZGVsX2NvcnJlY3Rpb25fdXBkYXRlZC9tc2JiLm1ldGEuQk1fMzYudHN2XCIpIiwiIiwiI2VkaXQgQVBPRSBhbmQgZGlhZ25vc2lzIGZvcm1hdCIsIm1ldGFfcm5hc2VxJEFQT0UgPC0gZ3N1YihcIi9cIiwgXCJcIiwgZ3N1YihcImVcIixcIlwiLCBtZXRhX3JuYXNlcSRBUE9FKSkiLCJtZXRhX3JuYXNlcSRBUE9FW2lzLm5hKG1ldGFfcm5hc2VxJEFQT0UpXSA8LSBcIlVua25vd25cIiIsIiIsIiNhZGQgbmV3IGdyb3VwIGNvbHVtbnMiLCJtZXRhX3JuYXNlcVssIGMoXCJzZXguYWQuYXBvZV9jZXJhZFwiLCBcImFkLmFwb2VfY2VyYWRcIiwgXCJzZXguYWRfY2VyYWRcIikgOj0gbGlzdChwYXN0ZShTRVhfaW5mZXJyZWQsIENFUkFELCBBUE9FLCBzZXAgPSBcIi5cIiksIHBhc3RlKENFUkFELCBBUE9FLCBzZXAgPSBcIi5cIiksIHBhc3RlKFNFWF9pbmZlcnJlZCwgQ0VSQUQsIHNlcCA9IFwiLlwiKSldIl19 -->
-<pre class="r"><code># read methylation meta info
-meta_meth &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/meta_meth.csv&quot;)
-
-# read RNAseq meta info
-meta_rnaseq &lt;- fread(&quot;/sc/orga/projects/zhangb03a/shared/msbb-seq/Data/mixed_model_correction_updated/msbb.meta.BM_36.tsv&quot;)
-
-#edit APOE and diagnosis format
-meta_rnaseq$APOE &lt;- gsub(&quot;/&quot;, &quot;&quot;, gsub(&quot;e&quot;,&quot;&quot;, meta_rnaseq$APOE))
-meta_rnaseq$APOE[is.na(meta_rnaseq$APOE)] &lt;- &quot;Unknown&quot;
-
-#add new group columns
-meta_rnaseq[, c(&quot;sex.ad.apoe_cerad&quot;, &quot;ad.apoe_cerad&quot;, &quot;sex.ad_cerad&quot;) := list(paste(SEX_inferred, CERAD, APOE, sep = &quot;.&quot;), paste(CERAD, APOE, sep = &quot;.&quot;), paste(SEX_inferred, CERAD, sep = &quot;.&quot;))]</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Mapping IDs between meta_meth and meta_rnaseq</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiNyZWFkIGlkIG1hcCBmaWxlIGZvciBtZXRoeWxhdGlvbiBtZXRhIGZpbGUiLCJpZF9tYXBfZmlsZSA8LSByZWFkX3hsc3goXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Jhd19kYXRhL01ldGh5bGF0aW9uQmFyY29kZVhTdWJOdW1YTWluZ2h1aVhXYW5nLnhsc3hcIiwgc2tpcCA9IDEwKSIsInNldERUKGlkX21hcF9maWxlKSIsIiNwYWQgdGhlIFN1Yk51bSB0byAxMCBkaWdpdHMiLCJpZF9tYXBfZmlsZSRTdWJOdW0gPC0gc3RyX3BhZChpZF9tYXBfZmlsZSRTdWJOdW0sIDEwLCBcImxlZnRcIiwgMCkiLCIiLCJpZF9tYXBfZmlsZSRTdWJOdW0gPC0gcGFzdGUwKFwiQU1QQURfTVNTTV9cIiwgaWRfbWFwX2ZpbGUkU3ViTnVtKSIsIiIsIiNtYXRjaCBJRHMgZm9yIG1ldGFfbWV0aCIsIm1ldGFfbWV0aCRTeW5hcHNlSUQgPC0gaWRfbWFwX2ZpbGUkU3ViTnVtW21hdGNoKG1ldGFfbWV0aCRTYW1wbGVfTmFtZSwgaWRfbWFwX2ZpbGUkU2FtcGxlX05hbWVfQmFyY29kZSldIiwiIiwiI0lEIG1hcHBpbmcgYmV0d2VlbiBtZXRhX3JuYXNlcSAmIG1ldGFfbWV0aCIsIklEX292ZXJsYXAgPC0gaW50ZXJzZWN0KG1ldGFfbWV0aCRTeW5hcHNlSUQsIG1ldGFfcm5hc2VxJFN5bmFwc2VJZCkiLCIiLCIjc3Vic2V0IG1ldGFfbWV0aCBieSBJRF9vdmVybGFwIiwibWV0YV9tZXRoIDwtIG1ldGFfbWV0aFtTeW5hcHNlSUQgJWluJSBJRF9vdmVybGFwXSIsIiIsIiMgYWRkIHNhbXBsZSBJRCBjb2x1bW4gdG8gbWV0YV9tZXRoIiwibWV0YV9tZXRoJFNhbXBsZUlEIDwtIHBhc3RlKG1ldGFfbWV0aCRTZW50cml4X0lELCBtZXRhX21ldGgkU2VudHJpeF9Qb3NpdGlvbiwgc2VwID0gXCJfXCIpIiwiIiwiIyBzdWJzZXQgbWV0YV9ybmFzZXEgYnkgSURfb3ZlcmxhcCIsIm1ldGFfcm5hc2VxIDwtIG1ldGFfcm5hc2VxW1N5bmFwc2VJZCAlaW4lIElEX292ZXJsYXBdIiwiIiwiIyBhZGQgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX3JuYXNlcSIsIm1ldGFfcm5hc2VxJFNhbXBsZUlEIDwtIG1ldGFfbWV0aCRTYW1wbGVJRFttYXRjaChtZXRhX3JuYXNlcSRTeW5hcHNlSWQsIG1ldGFfbWV0aCRTeW5hcHNlSUQpXSIsIiIsIiMgYWRkIGFub3RoZXIgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX3JuYXNlcSIsIm1ldGFfcm5hc2VxJFNhbXBsZUlEXzIgPC0gaWRfbWFwX2ZpbGUkU2FtcGxlX0lEW21hdGNoKG1ldGFfcm5hc2VxJFN5bmFwc2VJZCwgaWRfbWFwX2ZpbGUkU3ViTnVtKV0iLCIiLCIjIGFkZCBTYW1wbGUgYmF0Y2ggY29sdW1uIHRvIG1ldGFfcm5hc2VxIiwibWV0YV9ybmFzZXEkU2VudHJpeF9JRCA8LSBtZXRhX21ldGgkU2VudHJpeF9JRFttYXRjaChtZXRhX3JuYXNlcSRTeW5hcHNlSWQsIG1ldGFfbWV0aCRTeW5hcHNlSUQpXSJdfQ== -->
-<pre class="r"><code>#read id map file for methylation meta file
-id_map_file &lt;- read_xlsx(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/MethylationBarcodeXSubNumXMinghuiXWang.xlsx&quot;, skip = 10)
-setDT(id_map_file)
-#pad the SubNum to 10 digits
-id_map_file$SubNum &lt;- str_pad(id_map_file$SubNum, 10, &quot;left&quot;, 0)
-
-id_map_file$SubNum &lt;- paste0(&quot;AMPAD_MSSM_&quot;, id_map_file$SubNum)
-
-#match IDs for meta_meth
-meta_meth$SynapseID &lt;- id_map_file$SubNum[match(meta_meth$Sample_Name, id_map_file$Sample_Name_Barcode)]
-
-#ID mapping between meta_rnaseq &amp; meta_meth
-ID_overlap &lt;- intersect(meta_meth$SynapseID, meta_rnaseq$SynapseId)
-
-#subset meta_meth by ID_overlap
-meta_meth &lt;- meta_meth[SynapseID %in% ID_overlap]
-
-# add sample ID column to meta_meth
-meta_meth$SampleID &lt;- paste(meta_meth$Sentrix_ID, meta_meth$Sentrix_Position, sep = &quot;_&quot;)
-
-# subset meta_rnaseq by ID_overlap
-meta_rnaseq &lt;- meta_rnaseq[SynapseId %in% ID_overlap]
-
-# add sample ID column to meta_rnaseq
-meta_rnaseq$SampleID &lt;- meta_meth$SampleID[match(meta_rnaseq$SynapseId, meta_meth$SynapseID)]
-
-# add another sample ID column to meta_rnaseq
-meta_rnaseq$SampleID_2 &lt;- id_map_file$Sample_ID[match(meta_rnaseq$SynapseId, id_map_file$SubNum)]
-
-# add Sample batch column to meta_rnaseq
-meta_rnaseq$Sentrix_ID &lt;- meta_meth$Sentrix_ID[match(meta_rnaseq$SynapseId, meta_meth$SynapseID)]</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Removing samples with ambiguous sex and AD info</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoibWV0YV9ybmFzZXEgPC0gbWV0YV9ybmFzZXFbIVNhbXBsZUlEXzIgJWluJSBjKFwiUFFEVzU0NFwiLCBcIlRWVUY2MjBcIiwgXCJLQVNUNDE3XCIsIFwiRExVSDkzNlwiLCBcIkVPWVMwMTlcIikgXSJ9 -->
-<pre class="r"><code>meta_rnaseq &lt;- meta_rnaseq[!SampleID_2 %in% c(&quot;PQDW544&quot;, &quot;TVUF620&quot;, &quot;KAST417&quot;, &quot;DLUH936&quot;, &quot;EOYS019&quot;) ]</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Matching sample order between meta_rnaseq and beta/m matricies</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgY29sdW1uIG9yZGVyIGlzIHNhbWUgZm9yIGFsbCBiZXRhIG1hdHJpY2llcyIsInNhcHBseShsaXN0KGNvbG5hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSwgY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSwgY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSwgY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopLCBjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopLCBjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopLCBjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKSksIGlkZW50aWNhbCwgY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikpIl19 -->
-<pre class="r"><code># check if column order is same for all beta matricies
-sapply(list(colnames(betaVal_plate_pmi_race_adj), colnames(betaVal_plate_pmi_race_age_adj), colnames(betaVal_plate_pmi_race_sex_adj), colnames(MVal_plate_pmi_race_adj), colnames(MVal_plate_pmi_race_age_adj), colnames(MVal_plate_pmi_race_sex_adj), colnames(MVal_plate_pmi_race_age_sex_adj)), identical, colnames(betaVal_plate_pmi_race_age_sex_adj))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUUgVFJVRSBUUlVFIFRSVUUgVFJVRSBUUlVFIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgbWF0Y2ggbWV0YV9ybmFzZXEgYW5kIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqIHNhbXBsZSBvcmRlciIsIm1ldGFfcm5hc2VxIDwtIG1ldGFfcm5hc2VxW21hdGNoKGNvbG5hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSwgbWV0YV9ybmFzZXEkU2FtcGxlSUQpLCBdIiwic2V0REYobWV0YV9ybmFzZXEpIiwicm93bmFtZXMobWV0YV9ybmFzZXEpIDwtIG1ldGFfcm5hc2VxJFNhbXBsZUlEIl19 -->
-<pre class="r"><code># match meta_rnaseq and betaVal_plate_pmi_race_adj sample order
-meta_rnaseq &lt;- meta_rnaseq[match(colnames(betaVal_plate_pmi_race_adj), meta_rnaseq$SampleID), ]
-setDF(meta_rnaseq)
-rownames(meta_rnaseq) &lt;- meta_rnaseq$SampleID</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Making expressionset for beta values</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiBhcmUgc2FtZSIsImlkZW50aWNhbChjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkiXX0= -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and betaVal_plate_pmi_race_adj are same
-identical(colnames(betaVal_plate_pmi_race_adj), rownames(meta_rnaseq))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gbmV3KFwiQW5ub3RhdGVkRGF0YUZyYW1lXCIsIGRhdGEgPSBtZXRhX3JuYXNlcSkiLCIiLCIjIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiIsImV4cHJzZXRfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiwgcGhlbm9EYXRhID0gcGhlbm9EYXRhX2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSJdfQ== -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_betaVal_plate_pmi_race_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for betaVal_plate_pmi_race_adj
-exprset_betaVal_plate_pmi_race_adj &lt;- ExpressionSet(assayData = betaVal_plate_pmi_race_adj, phenoData = phenoData_betaVal_plate_pmi_race_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogYXJlIHNhbWUiLCJpZGVudGljYWwoY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKSJdfQ== -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and betaVal_plate_pmi_race_age_adj are same
-identical(colnames(betaVal_plate_pmi_race_age_adj), rownames(meta_rnaseq))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIG5ldyhcIkFubm90YXRlZERhdGFGcmFtZVwiLCBkYXRhID0gbWV0YV9ybmFzZXEpIiwiIiwiIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIiwiZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopIl19 -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_betaVal_plate_pmi_race_age_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for betaVal_plate_pmi_race_age_adj
-exprset_betaVal_plate_pmi_race_age_adj &lt;- ExpressionSet(assayData = betaVal_plate_pmi_race_age_adj, phenoData = phenoData_betaVal_plate_pmi_race_age_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIGFyZSBzYW1lIiwiaWRlbnRpY2FsKGNvbG5hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopLCByb3duYW1lcyhtZXRhX3JuYXNlcSkpIl19 -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and betaVal_plate_pmi_race_age_sex_adj are same
-identical(colnames(betaVal_plate_pmi_race_age_sex_adj), rownames(meta_rnaseq))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBuZXcoXCJBbm5vdGF0ZWREYXRhRnJhbWVcIiwgZGF0YSA9IG1ldGFfcm5hc2VxKSIsIiIsIiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGoiLCJleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_betaVal_plate_pmi_race_age_sex_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for betaVal_plate_pmi_race_age_sex_adj
-exprset_betaVal_plate_pmi_race_age_sex_adj &lt;- ExpressionSet(assayData = betaVal_plate_pmi_race_age_sex_adj, phenoData = phenoData_betaVal_plate_pmi_race_age_sex_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogYXJlIHNhbWUiLCJpZGVudGljYWwoY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKSJdfQ== -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and betaVal_plate_pmi_race_sex_adj are same
-identical(colnames(betaVal_plate_pmi_race_sex_adj), rownames(meta_rnaseq))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIG5ldyhcIkFubm90YXRlZERhdGFGcmFtZVwiLCBkYXRhID0gbWV0YV9ybmFzZXEpIiwiIiwiIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIiwiZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopIl19 -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_betaVal_plate_pmi_race_sex_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for betaVal_plate_pmi_race_sex_adj
-exprset_betaVal_plate_pmi_race_sex_adj &lt;- ExpressionSet(assayData = betaVal_plate_pmi_race_sex_adj, phenoData = phenoData_betaVal_plate_pmi_race_sex_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Making expressionset for M values</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiBhcmUgc2FtZSIsImlkZW50aWNhbChjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkiXX0= -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_adj are same
-identical(colnames(MVal_plate_pmi_race_adj), rownames(meta_rnaseq))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gbmV3KFwiQW5ub3RhdGVkRGF0YUZyYW1lXCIsIGRhdGEgPSBtZXRhX3JuYXNlcSkiLCIiLCIjIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiIsImV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiwgcGhlbm9EYXRhID0gcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSJdfQ== -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_MVal_plate_pmi_race_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for MVal_plate_pmi_race_adj
-exprset_MVal_plate_pmi_race_adj &lt;- ExpressionSet(assayData = MVal_plate_pmi_race_adj, phenoData = phenoData_MVal_plate_pmi_race_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogYXJlIHNhbWUiLCJpZGVudGljYWwoY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKSJdfQ== -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_age_adj are same
-identical(colnames(MVal_plate_pmi_race_age_adj), rownames(meta_rnaseq))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIG5ldyhcIkFubm90YXRlZERhdGFGcmFtZVwiLCBkYXRhID0gbWV0YV9ybmFzZXEpIiwiIiwiIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIiwiZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopIl19 -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_MVal_plate_pmi_race_age_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for MVal_plate_pmi_race_age_adj
-exprset_MVal_plate_pmi_race_age_adj &lt;- ExpressionSet(assayData = MVal_plate_pmi_race_age_adj, phenoData = phenoData_MVal_plate_pmi_race_age_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIGFyZSBzYW1lIiwiaWRlbnRpY2FsKGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopLCByb3duYW1lcyhtZXRhX3JuYXNlcSkpIl19 -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_age_sex_adj are same
-identical(colnames(MVal_plate_pmi_race_age_sex_adj), rownames(meta_rnaseq))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBuZXcoXCJBbm5vdGF0ZWREYXRhRnJhbWVcIiwgZGF0YSA9IG1ldGFfcm5hc2VxKSIsIiIsIiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGoiLCJleHByc2V0X01WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_MVal_plate_pmi_race_age_sex_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for MVal_plate_pmi_race_age_sex_adj
-exprset_MVal_plate_pmi_race_age_sex_adj &lt;- ExpressionSet(assayData = MVal_plate_pmi_race_age_sex_adj, phenoData = phenoData_MVal_plate_pmi_race_age_sex_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogYXJlIHNhbWUiLCJpZGVudGljYWwoY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKSJdfQ== -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_sex_adj are same
-identical(colnames(MVal_plate_pmi_race_sex_adj), rownames(meta_rnaseq))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIG5ldyhcIkFubm90YXRlZERhdGFGcmFtZVwiLCBkYXRhID0gbWV0YV9ybmFzZXEpIiwiIiwiIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIiwiZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9NVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopIl19 -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_MVal_plate_pmi_race_sex_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for MVal_plate_pmi_race_sex_adj
-exprset_MVal_plate_pmi_race_sex_adj &lt;- ExpressionSet(assayData = MVal_plate_pmi_race_sex_adj, phenoData = phenoData_MVal_plate_pmi_race_sex_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Writing expressionsets</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbInNhdmVSRFMoZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiwgZmlsZSA9IFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vQmV0YVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnJkc1wiKSIsIiIsInNhdmVSRFMoZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqdXN0ZWQucmRzXCIpIiwiIiwic2F2ZVJEUyhleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkanVzdGVkLnJkc1wiKSIsIiIsInNhdmVSRFMoZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqdXN0ZWQucmRzXCIpIl19 -->
-<pre class="r"><code>saveRDS(exprset_betaVal_plate_pmi_race_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_plate_pmi_race_adjusted.rds&quot;)
-
-saveRDS(exprset_betaVal_plate_pmi_race_age_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_plate_pmi_race_age_adjusted.rds&quot;)
-
-saveRDS(exprset_betaVal_plate_pmi_race_age_sex_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_plate_pmi_race_age_sex_adjusted.rds&quot;)
-
-saveRDS(exprset_betaVal_plate_pmi_race_sex_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_plate_pmi_race_sex_adjusted.rds&quot;)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbInNhdmVSRFMoZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiwgZmlsZSA9IFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnJkc1wiKSIsIiIsInNhdmVSRFMoZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqdXN0ZWQucmRzXCIpIiwiIiwic2F2ZVJEUyhleHByc2V0X01WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkanVzdGVkLnJkc1wiKSIsIiIsInNhdmVSRFMoZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqdXN0ZWQucmRzXCIpIl19 -->
-<pre class="r"><code>saveRDS(exprset_MVal_plate_pmi_race_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_plate_pmi_race_adjusted.rds&quot;)
-
-saveRDS(exprset_MVal_plate_pmi_race_age_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_plate_pmi_race_age_adjusted.rds&quot;)
-
-saveRDS(exprset_MVal_plate_pmi_race_age_sex_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_plate_pmi_race_age_sex_adjusted.rds&quot;)
-
-saveRDS(exprset_MVal_plate_pmi_race_sex_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_plate_pmi_race_sex_adjusted.rds&quot;)</code></pre>
+# for overlaps (ad-nl &amp; f &amp; m)
+fwrite(gst_overlap_go, &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/GO_dmp_adnl_fm_overlap.csv&quot;)
+fwrite(gst_overlap_kegg, &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/KEGG_dmp_adnl_fm_overlap.csv&quot;)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQpSZW5kZXIgdGhlIG5vdGVib29rIHdpdGggY29tbWFuZGxpbmUgUnNjcmlwdCAtZSAicm1hcmtkb3duOjpyZW5kZXIoJ21ha2VfZXhwcmVzc2lvbnNldC5SbWQnKSINCg0KYGBge3IgbG9hZGluZyBwYWNrYWdlcywgbWVzc2FnZSA9IEZ9DQpsaWJyYXJ5KGRhdGEudGFibGUpDQpsaWJyYXJ5KHJlYWR4bCkNCmxpYnJhcnkoc3RyaW5ncikNCmxpYnJhcnkobGltbWEpDQpsaWJyYXJ5KEJpb2Jhc2UpDQpgYGANCg0KDQpSZWFkaW5nIGFkanVzdGVkIGJldGEgdmFsdWVzDQpgYGB7ciByZWFkaW5nIGJhdGNoIHBtaSByYWNlIGFkanVzdGVkIGJldGEgdmFsdWVzLCBtZXNzYWdlID0gRn0NCiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZGp1c3RlZCBiZXRhIHZhbHVlcw0KaW52aXNpYmxlKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIGZyZWFkKCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9CZXRhVmFscy9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZGp1c3RlZC50c3YiLCBkYXRhLnRhYmxlID0gRikpDQoNCiMgbmFtaW5nIHRoZSByb3dzIHdpdGggdGhlIHByb2JlIGNvbHVtbg0Kcm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopIDwtIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqJFYxDQpiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkalssIC0xXQ0KDQojIGNvbnZlcnQgYmV0YVZhbF9zZXhfYWRqIHRvIG1hdHJpeA0KYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gYXMubWF0cml4KGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKQ0KYGBgDQoNCmBgYHtyIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2UgYWdlIGFkanVzdGVkIGJldGEgdmFsdWVzLCBtZXNzYWdlID0gRn0NCiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZ2UgYWRqdXN0ZWQgYmV0YSB2YWx1ZXMNCmludmlzaWJsZShiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzL0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGp1c3RlZC50c3YiLCBkYXRhLnRhYmxlID0gRikpDQoNCiMgbmFtaW5nIHRoZSByb3dzIHdpdGggdGhlIHByb2JlIGNvbHVtbg0Kcm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGokVjENCmJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGpbLCAtMV0NCg0KIyBjb252ZXJ0IGJldGFWYWxfc2V4X2FkaiB0byBtYXRyaXgNCmJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiA8LSBhcy5tYXRyaXgoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKQ0KYGBgDQoNCmBgYHtyIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2Ugc2V4IGFkanVzdGVkIGJldGEgdmFsdWVzLCBtZXNzYWdlID0gRn0NCiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWRqdXN0ZWQgYmV0YSB2YWx1ZXMNCmludmlzaWJsZShiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzL0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX3NleF9hZGp1c3RlZC50c3YiLCBkYXRhLnRhYmxlID0gRikpDQoNCiMgbmFtaW5nIHRoZSByb3dzIHdpdGggdGhlIHByb2JlIGNvbHVtbg0Kcm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGokVjENCmJldGFWYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGpbLCAtMV0NCg0KIyBjb252ZXJ0IGJldGFWYWxfc2V4X2FkaiB0byBtYXRyaXgNCmJldGFWYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBhcy5tYXRyaXgoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKQ0KYGBgDQoNCmBgYHtyIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2Ugc2V4IGFnZSBhZGp1c3RlZCBiZXRhIHZhbHVlcywgbWVzc2FnZSA9IEZ9DQojIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2Ugc2V4IGFnZSBhZGp1c3RlZCBiZXRhIHZhbHVlcw0KaW52aXNpYmxlKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzL0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqdXN0ZWQudHN2IiwgZGF0YS50YWJsZSA9IEYpKQ0KDQojIG5hbWluZyB0aGUgcm93cyB3aXRoIHRoZSBwcm9iZSBjb2x1bW4NCnJvd25hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopIDwtIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGokVjENCmJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkalssIC0xXQ0KDQojIGNvbnZlcnQgYmV0YVZhbF9zZXhfYWRqIHRvIG1hdHJpeA0KYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBhcy5tYXRyaXgoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikNCmBgYA0KDQoNClJlYWRpbmcgYWRqdXN0ZWQgTSB2YWx1ZXMNCmBgYHtyIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2UgYWRqdXN0ZWQgTSB2YWx1ZXMsIG1lc3NhZ2UgPSBGfQ0KIyByZWFkaW5nIGJhdGNoIHBtaSByYWNlIGFkanVzdGVkIE0gdmFsdWVzDQppbnZpc2libGUoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzL01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnRzdiIsIGRhdGEudGFibGUgPSBGKSkNCg0KIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uDQpyb3duYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaikgPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGokVjENCk1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqWywgLTFdDQoNCiMgY29udmVydCBNVmFsX3NleF9hZGogdG8gbWF0cml4DQpNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBhcy5tYXRyaXgoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopDQpgYGANCg0KYGBge3IgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZ2UgYWRqdXN0ZWQgTSB2YWx1ZXMsIG1lc3NhZ2UgPSBGfQ0KIyByZWFkaW5nIGJhdGNoIHBtaSByYWNlIGFnZSBhZGp1c3RlZCBNIHZhbHVlcw0KaW52aXNpYmxlKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX2FkanVzdGVkLnRzdiIsIGRhdGEudGFibGUgPSBGKSkNCg0KIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uDQpyb3duYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiRWMQ0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkalssIC0xXQ0KDQojIGNvbnZlcnQgTVZhbF9zZXhfYWRqIHRvIG1hdHJpeA0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIGFzLm1hdHJpeChNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopDQpgYGANCg0KYGBge3IgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWRqdXN0ZWQgTSB2YWx1ZXMsIG1lc3NhZ2UgPSBGfQ0KIyByZWFkaW5nIGJhdGNoIHBtaSByYWNlIHNleCBhZGp1c3RlZCBNIHZhbHVlcw0KaW52aXNpYmxlKE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkanVzdGVkLnRzdiIsIGRhdGEudGFibGUgPSBGKSkNCg0KIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uDQpyb3duYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiRWMQ0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkalssIC0xXQ0KDQojIGNvbnZlcnQgTVZhbF9zZXhfYWRqIHRvIG1hdHJpeA0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIGFzLm1hdHJpeChNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopDQpgYGANCg0KYGBge3IgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWdlIGFkanVzdGVkIE0gdmFsdWVzLCBtZXNzYWdlID0gRn0NCiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWdlIGFkanVzdGVkIE0gdmFsdWVzDQppbnZpc2libGUoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGp1c3RlZC50c3YiLCBkYXRhLnRhYmxlID0gRikpDQoNCiMgbmFtaW5nIHRoZSByb3dzIHdpdGggdGhlIHByb2JlIGNvbHVtbg0Kcm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikgPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiRWMQ0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqWywgLTFdDQoNCiMgY29udmVydCBNVmFsX3NleF9hZGogdG8gbWF0cml4DQpNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIDwtIGFzLm1hdHJpeChNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKQ0KYGBgDQoNCg0KUmVhZGluZyBNZXRhIGZpbGVzDQpgYGB7ciByZWFkaW5nIG1ldGEgaW5mb3JtYXRpb259DQojIHJlYWQgbWV0aHlsYXRpb24gbWV0YSBpbmZvDQptZXRhX21ldGggPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcmF3X2RhdGEvbWV0YV9tZXRoLmNzdiIpDQoNCiMgcmVhZCBSTkFzZXEgbWV0YSBpbmZvDQptZXRhX3JuYXNlcSA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL3NoYXJlZC9tc2JiLXNlcS9EYXRhL21peGVkX21vZGVsX2NvcnJlY3Rpb25fdXBkYXRlZC9tc2JiLm1ldGEuQk1fMzYudHN2IikNCg0KI2VkaXQgQVBPRSBhbmQgZGlhZ25vc2lzIGZvcm1hdA0KbWV0YV9ybmFzZXEkQVBPRSA8LSBnc3ViKCIvIiwgIiIsIGdzdWIoImUiLCIiLCBtZXRhX3JuYXNlcSRBUE9FKSkNCm1ldGFfcm5hc2VxJEFQT0VbaXMubmEobWV0YV9ybmFzZXEkQVBPRSldIDwtICJVbmtub3duIg0KDQojYWRkIG5ldyBncm91cCBjb2x1bW5zDQptZXRhX3JuYXNlcVssIGMoInNleC5hZC5hcG9lX2NlcmFkIiwgImFkLmFwb2VfY2VyYWQiLCAic2V4LmFkX2NlcmFkIikgOj0gbGlzdChwYXN0ZShTRVhfaW5mZXJyZWQsIENFUkFELCBBUE9FLCBzZXAgPSAiLiIpLCBwYXN0ZShDRVJBRCwgQVBPRSwgc2VwID0gIi4iKSwgcGFzdGUoU0VYX2luZmVycmVkLCBDRVJBRCwgc2VwID0gIi4iKSldDQpgYGANCg0KTWFwcGluZyBJRHMgYmV0d2VlbiBtZXRhX21ldGggYW5kIG1ldGFfcm5hc2VxDQpgYGB7ciBtYXBwaW5nIElEcyBiZXR3ZWVuIG1ldGFfbWV0aCBhbmQgbWV0YV9ybmFzZXF9DQojcmVhZCBpZCBtYXAgZmlsZSBmb3IgbWV0aHlsYXRpb24gbWV0YSBmaWxlDQppZF9tYXBfZmlsZSA8LSByZWFkX3hsc3goIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcmF3X2RhdGEvTWV0aHlsYXRpb25CYXJjb2RlWFN1Yk51bVhNaW5naHVpWFdhbmcueGxzeCIsIHNraXAgPSAxMCkNCnNldERUKGlkX21hcF9maWxlKQ0KI3BhZCB0aGUgU3ViTnVtIHRvIDEwIGRpZ2l0cw0KaWRfbWFwX2ZpbGUkU3ViTnVtIDwtIHN0cl9wYWQoaWRfbWFwX2ZpbGUkU3ViTnVtLCAxMCwgImxlZnQiLCAwKQ0KDQppZF9tYXBfZmlsZSRTdWJOdW0gPC0gcGFzdGUwKCJBTVBBRF9NU1NNXyIsIGlkX21hcF9maWxlJFN1Yk51bSkNCg0KI21hdGNoIElEcyBmb3IgbWV0YV9tZXRoDQptZXRhX21ldGgkU3luYXBzZUlEIDwtIGlkX21hcF9maWxlJFN1Yk51bVttYXRjaChtZXRhX21ldGgkU2FtcGxlX05hbWUsIGlkX21hcF9maWxlJFNhbXBsZV9OYW1lX0JhcmNvZGUpXQ0KDQojSUQgbWFwcGluZyBiZXR3ZWVuIG1ldGFfcm5hc2VxICYgbWV0YV9tZXRoDQpJRF9vdmVybGFwIDwtIGludGVyc2VjdChtZXRhX21ldGgkU3luYXBzZUlELCBtZXRhX3JuYXNlcSRTeW5hcHNlSWQpDQoNCiNzdWJzZXQgbWV0YV9tZXRoIGJ5IElEX292ZXJsYXANCm1ldGFfbWV0aCA8LSBtZXRhX21ldGhbU3luYXBzZUlEICVpbiUgSURfb3ZlcmxhcF0NCg0KIyBhZGQgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX21ldGgNCm1ldGFfbWV0aCRTYW1wbGVJRCA8LSBwYXN0ZShtZXRhX21ldGgkU2VudHJpeF9JRCwgbWV0YV9tZXRoJFNlbnRyaXhfUG9zaXRpb24sIHNlcCA9ICJfIikNCg0KIyBzdWJzZXQgbWV0YV9ybmFzZXEgYnkgSURfb3ZlcmxhcA0KbWV0YV9ybmFzZXEgPC0gbWV0YV9ybmFzZXFbU3luYXBzZUlkICVpbiUgSURfb3ZlcmxhcF0NCg0KIyBhZGQgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX3JuYXNlcQ0KbWV0YV9ybmFzZXEkU2FtcGxlSUQgPC0gbWV0YV9tZXRoJFNhbXBsZUlEW21hdGNoKG1ldGFfcm5hc2VxJFN5bmFwc2VJZCwgbWV0YV9tZXRoJFN5bmFwc2VJRCldDQoNCiMgYWRkIGFub3RoZXIgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX3JuYXNlcQ0KbWV0YV9ybmFzZXEkU2FtcGxlSURfMiA8LSBpZF9tYXBfZmlsZSRTYW1wbGVfSURbbWF0Y2gobWV0YV9ybmFzZXEkU3luYXBzZUlkLCBpZF9tYXBfZmlsZSRTdWJOdW0pXQ0KDQojIGFkZCBTYW1wbGUgYmF0Y2ggY29sdW1uIHRvIG1ldGFfcm5hc2VxDQptZXRhX3JuYXNlcSRTZW50cml4X0lEIDwtIG1ldGFfbWV0aCRTZW50cml4X0lEW21hdGNoKG1ldGFfcm5hc2VxJFN5bmFwc2VJZCwgbWV0YV9tZXRoJFN5bmFwc2VJRCldDQpgYGANCg0KDQpSZW1vdmluZyBzYW1wbGVzIHdpdGggYW1iaWd1b3VzIHNleCBhbmQgQUQgaW5mbw0KYGBge3J9DQptZXRhX3JuYXNlcSA8LSBtZXRhX3JuYXNlcVshU2FtcGxlSURfMiAlaW4lIGMoIlBRRFc1NDQiLCAiVFZVRjYyMCIsICJLQVNUNDE3IiwgIkRMVUg5MzYiLCAiRU9ZUzAxOSIpIF0NCmBgYA0KDQoNCk1hdGNoaW5nIHNhbXBsZSBvcmRlciBiZXR3ZWVuIG1ldGFfcm5hc2VxIGFuZCBiZXRhL20gbWF0cmljaWVzDQpgYGB7ciBtYXRjaGluZyBzYW1wbGUgb3JkZXIgYmV0d2VlbiBtZXRhX3JuYXNlcSBhbmQgYmV0YS9tIG1hdHJpY2llc30NCiMgY2hlY2sgaWYgY29sdW1uIG9yZGVyIGlzIHNhbWUgZm9yIGFsbCBiZXRhIG1hdHJpY2llcw0Kc2FwcGx5KGxpc3QoY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopLCBjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopLCBjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopLCBjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiksIGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiksIGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopKSwgaWRlbnRpY2FsLCBjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKSkNCg0KIyBtYXRjaCBtZXRhX3JuYXNlcSBhbmQgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogc2FtcGxlIG9yZGVyDQptZXRhX3JuYXNlcSA8LSBtZXRhX3JuYXNlcVttYXRjaChjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIG1ldGFfcm5hc2VxJFNhbXBsZUlEKSwgXQ0Kc2V0REYobWV0YV9ybmFzZXEpDQpyb3duYW1lcyhtZXRhX3JuYXNlcSkgPC0gbWV0YV9ybmFzZXEkU2FtcGxlSUQNCmBgYA0KDQoNCk1ha2luZyBleHByZXNzaW9uc2V0IGZvciBiZXRhIHZhbHVlcw0KYGBge3IgYXNzZW1ibGluZyBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2Fkan0NCiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiBhcmUgc2FtZQ0KaWRlbnRpY2FsKGNvbG5hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKQ0KDQojIGNyZWF0ZSBtZXRhIGluZm8gZm9yIHRoZSBleHByZXNzaW9uc2V0DQpwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gbmV3KCJBbm5vdGF0ZWREYXRhRnJhbWUiLCBkYXRhID0gbWV0YV9ybmFzZXEpDQoNCiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqDQpleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIEV4cHJlc3Npb25TZXQoYXNzYXlEYXRhID0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaikNCmBgYA0KDQpgYGB7ciBhc3NlbWJsaW5nIGV4cHJlc3Npb25zZXQgZm9yIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2Fkan0NCiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogYXJlIHNhbWUNCmlkZW50aWNhbChjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopLCByb3duYW1lcyhtZXRhX3JuYXNlcSkpDQoNCiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQNCnBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gbmV3KCJBbm5vdGF0ZWREYXRhRnJhbWUiLCBkYXRhID0gbWV0YV9ybmFzZXEpDQoNCiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2Fkag0KZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopDQpgYGANCg0KYGBge3IgYXNzZW1ibGluZyBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqfQ0KIyBjaGVjayBpZiByb3duYW1lcyBhbmQgY29sbmFtZXMgb2YgbWV0YV9ybmFzZXEgYW5kIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogYXJlIHNhbWUNCmlkZW50aWNhbChjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKQ0KDQojIGNyZWF0ZSBtZXRhIGluZm8gZm9yIHRoZSBleHByZXNzaW9uc2V0DQpwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBuZXcoIkFubm90YXRlZERhdGFGcmFtZSIsIGRhdGEgPSBtZXRhX3JuYXNlcSkNCg0KIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2Fkag0KZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIDwtIEV4cHJlc3Npb25TZXQoYXNzYXlEYXRhID0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiwgcGhlbm9EYXRhID0gcGhlbm9EYXRhX2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopDQpgYGANCg0KYGBge3IgYXNzZW1ibGluZyBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGp9DQojIGNoZWNrIGlmIHJvd25hbWVzIGFuZCBjb2xuYW1lcyBvZiBtZXRhX3JuYXNlcSBhbmQgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIGFyZSBzYW1lDQppZGVudGljYWwoY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKQ0KDQojIGNyZWF0ZSBtZXRhIGluZm8gZm9yIHRoZSBleHByZXNzaW9uc2V0DQpwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIG5ldygiQW5ub3RhdGVkRGF0YUZyYW1lIiwgZGF0YSA9IG1ldGFfcm5hc2VxKQ0KDQojIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGoNCmV4cHJzZXRfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIEV4cHJlc3Npb25TZXQoYXNzYXlEYXRhID0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKQ0KYGBgDQoNCg0KDQpNYWtpbmcgZXhwcmVzc2lvbnNldCBmb3IgTSB2YWx1ZXMNCmBgYHtyIGFzc2VtYmxpbmcgZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGp9DQojIGNoZWNrIGlmIHJvd25hbWVzIGFuZCBjb2xuYW1lcyBvZiBtZXRhX3JuYXNlcSBhbmQgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogYXJlIHNhbWUNCmlkZW50aWNhbChjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkNCg0KIyBjcmVhdGUgbWV0YSBpbmZvIGZvciB0aGUgZXhwcmVzc2lvbnNldA0KcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIG5ldygiQW5ub3RhdGVkRGF0YUZyYW1lIiwgZGF0YSA9IG1ldGFfcm5hc2VxKQ0KDQojIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBNVmFsX3BsYXRlX3BtaV9yYWNlX2Fkag0KZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBFeHByZXNzaW9uU2V0KGFzc2F5RGF0YSA9IE1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopDQpgYGANCg0KYGBge3IgYXNzZW1ibGluZyBleHByZXNzaW9uc2V0IGZvciBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGp9DQojIGNoZWNrIGlmIHJvd25hbWVzIGFuZCBjb2xuYW1lcyBvZiBtZXRhX3JuYXNlcSBhbmQgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIGFyZSBzYW1lDQppZGVudGljYWwoY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKQ0KDQojIGNyZWF0ZSBtZXRhIGluZm8gZm9yIHRoZSBleHByZXNzaW9uc2V0DQpwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIG5ldygiQW5ub3RhdGVkRGF0YUZyYW1lIiwgZGF0YSA9IG1ldGFfcm5hc2VxKQ0KDQojIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGoNCmV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIEV4cHJlc3Npb25TZXQoYXNzYXlEYXRhID0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKQ0KYGBgDQoNCmBgYHtyIGFzc2VtYmxpbmcgZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2Fkan0NCiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIGFyZSBzYW1lDQppZGVudGljYWwoY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkNCg0KIyBjcmVhdGUgbWV0YSBpbmZvIGZvciB0aGUgZXhwcmVzc2lvbnNldA0KcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gbmV3KCJBbm5vdGF0ZWREYXRhRnJhbWUiLCBkYXRhID0gbWV0YV9ybmFzZXEpDQoNCiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGoNCmV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBFeHByZXNzaW9uU2V0KGFzc2F5RGF0YSA9IE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKQ0KYGBgDQoNCmBgYHtyIGFzc2VtYmxpbmcgZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqfQ0KIyBjaGVjayBpZiByb3duYW1lcyBhbmQgY29sbmFtZXMgb2YgbWV0YV9ybmFzZXEgYW5kIE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiBhcmUgc2FtZQ0KaWRlbnRpY2FsKGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkNCg0KIyBjcmVhdGUgbWV0YSBpbmZvIGZvciB0aGUgZXhwcmVzc2lvbnNldA0KcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBuZXcoIkFubm90YXRlZERhdGFGcmFtZSIsIGRhdGEgPSBtZXRhX3JuYXNlcSkNCg0KIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqDQpleHByc2V0X01WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBFeHByZXNzaW9uU2V0KGFzc2F5RGF0YSA9IE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiwgcGhlbm9EYXRhID0gcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaikNCmBgYA0KDQoNCldyaXRpbmcgZXhwcmVzc2lvbnNldHMNCmBgYHtyIHdyaXRpbmcgZXhwcmVzc2lvbnNldHMgZm9yIGJldGEgdmFsdWVzfQ0Kc2F2ZVJEUyhleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqLCBmaWxlID0gIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZGp1c3RlZC5yZHMiKQ0KDQpzYXZlUkRTKGV4cHJzZXRfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqLCBmaWxlID0gIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqdXN0ZWQucmRzIikNCg0Kc2F2ZVJEUyhleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGosIGZpbGUgPSAiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vQmV0YVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqdXN0ZWQucmRzIikNCg0Kc2F2ZVJEUyhleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiwgZmlsZSA9ICIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9CZXRhVmFsc19leHByZXNzaW9uc2V0L2V4cHJzZXRfQmV0YV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkanVzdGVkLnJkcyIpDQpgYGANCg0KYGBge3Igd3JpdGluZyBleHByZXNzaW9uc2V0cyBmb3IgTSB2YWx1ZXN9DQpzYXZlUkRTKGV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGosIGZpbGUgPSAiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnJkcyIpDQoNCnNhdmVSRFMoZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIGZpbGUgPSAiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGp1c3RlZC5yZHMiKQ0KDQpzYXZlUkRTKGV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiwgZmlsZSA9ICIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9NVmFsc19leHByZXNzaW9uc2V0L2V4cHJzZXRfTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGp1c3RlZC5yZHMiKQ0KDQpzYXZlUkRTKGV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqLCBmaWxlID0gIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqdXN0ZWQucmRzIikNCmBgYA0KDQo=</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQpSc2NyaXB0IC1lICJybWFya2Rvd246OnJlbmRlcignRE1QX0dPX0tFR0cuUm1kJykiDQoNCmBgYHtyIGxvYWRpbmcgcGFja2FnZXMsIG1lc3NhZ2UgPSBGQUxTRSwgd2FybmluZyA9IEZBTFNFfQ0KbGlicmFyeShkYXRhLnRhYmxlKQ0KbGlicmFyeShtaXNzTWV0aHlsKQ0KI2xpYnJhcnkoSWxsdW1pbmFIdW1hbk1ldGh5bGF0aW9uRVBJQ2Fubm8uaWxtMTBiNC5oZzE5KQ0KbGlicmFyeShJbGx1bWluYUh1bWFuTWV0aHlsYXRpb25FUElDYW5uby5pbG0xMGIyLmhnMTkpDQpsaWJyYXJ5KHN0cmluZ3IpDQpgYGANCg0KDQpHTyBhbmFseXNpcyBmb3IgRE1QcyAoQUQtTkwpDQpgYGB7ciBHTyBhbmFseXNpcyBmb3IgRE1QcyAoQUQtTkwpfQ0KIyBmb3IgYWRfbmwNCmRtcF9hZF9ubCA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9ETVBfUmVzdWx0cy9ETVBfZXJtaW5nX2Fkal9wbGF0ZS9ETVBfYWRfbmwudHN2IikNCg0KIyBnZXQgc2lnbmlmaWNhbnQgRE1Qcw0KZG1wX3NpZ19hZF9ubF9wcm9iZSA8LSAoc3Vic2V0KGRtcF9hZF9ubCwgYWRqLlAuVmFsIDwgMC4wNSkpJFYxDQoNCiMgZ2V0IGFsbCBwcm9iZXMNCmRtcF9hbGxfYWRfbmxfcHJvYmUgPC0gKGRtcF9hZF9ubCkkVjENCg0KIyBnZXQgR08gdGVybXMNCmdzdF9hZF9ubF9nbyA8LSBnb21ldGgoc2lnLmNwZz1kbXBfc2lnX2FkX25sX3Byb2JlLCBhbGwuY3BnPWRtcF9hbGxfYWRfbmxfcHJvYmUsIGNvbGxlY3Rpb24gPSAiR08iLCBhcnJheS50eXBlID0gIkVQSUMiKQ0KDQojIGdldCBrZWdnIHBhdGh3YXlzDQpnc3RfYWRfbmxfa2VnZyA8LSBnb21ldGgoc2lnLmNwZz1kbXBfc2lnX2FkX25sX3Byb2JlLCBhbGwuY3BnPWRtcF9hbGxfYWRfbmxfcHJvYmUsIGNvbGxlY3Rpb24gPSAiS0VHRyIsIGFycmF5LnR5cGUgPSAiRVBJQyIpDQpgYGANCg0KDQoNCmBgYHtyIEdPIGFuYWx5c2lzIGZvciBETVAgb3ZlcmxhcHMgKGFkLW5sICYgZiAmIG0pfQ0KIyByZWFkIHRoZSBWZW5uIHBhcnQgZmlsZQ0KdmVubl9wYXJ0X2FkbmxfZm0gPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvRE1QX1Jlc3VsdHMvRE1QX2VybWluZ19hZGpfcGxhdGUvdmVubl9mX21fYWRfbmxfcGFydC5jc3YiKQ0KDQojIGdldCB0aGUgb3ZlcmxhcCBwYXJ0ICgxNywgNjEsIDI1LCAxNzY4KQ0KZG1wX292ZXJsYXAgPC0gdW5saXN0KHZlbm5fcGFydF9hZG5sX2ZtW2MoMSwgMywgNSwgNiksIDVdKQ0KZG1wX292ZXJsYXAgPC0gdW5saXN0KGxhcHBseShkbXBfb3ZlcmxhcCwgc3RyX3NwbGl0LCAiXFx8IikpDQoNCiMgZ2V0IEdPIHRlcm1zDQpnc3Rfb3ZlcmxhcF9nbyA8LSBnb21ldGgoc2lnLmNwZz1kbXBfb3ZlcmxhcCwgYWxsLmNwZz1kbXBfYWxsX2FkX25sX3Byb2JlLCBjb2xsZWN0aW9uID0gIkdPIiwgYXJyYXkudHlwZSA9ICJFUElDIikNCg0KIyBnZXQga2VnZyBwYXRod2F5cw0KZ3N0X292ZXJsYXBfa2VnZyA8LSBnb21ldGgoc2lnLmNwZz1kbXBfb3ZlcmxhcCwgYWxsLmNwZz1kbXBfYWxsX2FkX25sX3Byb2JlLCBjb2xsZWN0aW9uID0gIktFR0ciLCBhcnJheS50eXBlID0gIkVQSUMiKQ0KYGBgDQoNCg0KV3JpdGluZyB0aGUgcmVzdWx0cw0KYGBge3Igd3JpdGluZyB0aGUgcmVzdWx0c30NCiMgZm9yIGFkLW5sDQpmd3JpdGUoZ3N0X2FkX25sX2dvLCAiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9ETVBfUmVzdWx0cy9ETVBfZXJtaW5nX2Fkal9wbGF0ZS9HT19kbXBfYWRfbmwuY3N2IikNCmZ3cml0ZShnc3RfYWRfbmxfa2VnZywgIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvRE1QX1Jlc3VsdHMvRE1QX2VybWluZ19hZGpfcGxhdGUvS0VHR19kbXBfYWRfbmwuY3N2IikNCg0KIyBmb3Igb3ZlcmxhcHMgKGFkLW5sICYgZiAmIG0pDQpmd3JpdGUoZ3N0X292ZXJsYXBfZ28sICIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL0RNUF9SZXN1bHRzL0RNUF9lcm1pbmdfYWRqX3BsYXRlL0dPX2RtcF9hZG5sX2ZtX292ZXJsYXAuY3N2IikNCmZ3cml0ZShnc3Rfb3ZlcmxhcF9rZWdnLCAiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9ETVBfUmVzdWx0cy9ETVBfZXJtaW5nX2Fkal9wbGF0ZS9LRUdHX2RtcF9hZG5sX2ZtX292ZXJsYXAuY3N2IikNCmBgYA0KDQo=</div>
 
 
 

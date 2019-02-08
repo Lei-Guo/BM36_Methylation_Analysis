@@ -1,0 +1,43 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Rscript -e "rmarkdown::render('Venn_part_dmp_annot.Rmd')"
+
+```{r loading packages, message = F}
+library(data.table)
+library(stringr)
+```
+
+
+Reading DMP results
+```{r reading DMP results}
+
+dmp_ad_nl <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/DMP_ad_nl.tsv")
+
+```
+
+
+Reading Venn partition file
+```{r reading Venn partition file}
+#
+venn_part_f_m_dmp_ad_nl <- fread("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/venn_f_m_ad_nl_part.csv")
+
+# get the overlap between AD-NL and FAD-MAD (17 DMPS)
+overlap_dmp_17 <- unlist(venn_part_f_m_dmp_ad_nl[5, 5])
+overlap_dmp_17 <- unlist(str_split(overlap_dmp_17, "\\|"))
+
+# get the annotations for overlap_dmp_17
+overlap_dmp_17_annot <- dmp_ad_nl[dmp_ad_nl$V1 %in% overlap_dmp_17]
+
+# select specific annotation columns
+overlap_dmp_17_annot <- overlap_dmp_17_annot[, c("V1", "chr", "GencodeCompV12_NAME"), with = F]
+```
+
+
+Writing the result
+```{r}
+fwrite(overlap_dmp_17_annot, "/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/venn_f_m_ad_nl_overlap_annot.csv")
+```
+

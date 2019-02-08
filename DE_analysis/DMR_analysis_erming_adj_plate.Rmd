@@ -1,0 +1,116 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Rscript -e "rmarkdown::render('DMR_analysis_erming_adj_plate.Rmd')"
+
+```{r loading packages, message = FALSE, warning = FALSE}
+library(IlluminaHumanMethylationEPICanno.ilm10b2.hg19)
+library(limma)
+library(data.table)
+library(DMRcate)
+library(missMethyl)
+```
+
+Reading expressionsets
+```{r reading the expressionsets, message = FALSE}
+# read sex adjusted expressionset
+mVal_age_sex_adj <- readRDS("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/exprset_M_Values_QCed_normlized_plate_pmi_race_age_sex_adjusted.rds")
+
+# read non-sex-adjusted expressionset
+mVal_age_adj <- readRDS("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/exprset_M_Values_QCed_normlized_plate_pmi_race_age_adjusted.rds")
+```
+
+Getting the beadarray annotation data
+```{r getting the beadarray annotation data}
+# get the beadarray annotation data
+ann_epic <- getAnnotation(IlluminaHumanMethylationEPICanno.ilm10b2.hg19)
+
+ann850kSub <- ann_epic[match(rownames(mVal_age_sex_adj), ann_epic$Name), c(1:4,12:19,24:ncol(ann_epic))]
+```
+
+Checking sample number in each group
+```{r checking sample number in each group}
+# for AD-NL groups
+as.data.frame(table(pData(mVal_age_sex_adj)$pq_ad))
+
+# for ad.apoe_pqad groups
+as.data.frame(table(pData(mVal_age_sex_adj)$ad.apoe_pqad))
+
+# for sex.ad.apoe_pqad groups
+as.data.frame(table(pData(mVal_age_sex_adj)$sex.ad.apoe_pqad))
+```
+
+
+## Between AD and Normal
+
+DMR analysis for AD-NL
+```{r DMR analysis for AD-NL}
+# subset AD and Normal
+mVal_age_sex_adj_ad_nl <- mVal_age_sex_adj[ , mVal_age_sex_adj$pq_ad == "AD" | mVal_age_sex_adj$pq_ad == "Normal"]
+
+# make design matrix
+design_ad_nl <- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad_nl$pq_ad))
+colnames(design_ad_nl) <- levels(factor(mVal_age_sex_adj_ad_nl$pq_ad))
+
+# make contrast matrix
+contrast_ad_nl <- makeContrasts(contrasts = "AD-Normal", levels = design_ad_nl)
+
+# DMR
+Annotation_ad_nl <- cpg.annotate(object = exprs(mVal_age_sex_adj_ad_nl), datatype = "array", what = "M", analysis.type = "differential", design = design_ad_nl, contrasts = TRUE, cont.matrix = contrast_ad_nl, coef = "AD-Normal", arraytype = "EPIC")
+
+DMRs_ad_nl <- dmrcate(Annotation_ad_nl, lambda=1000, C=2)
+```
+
+## Between Female and Male
+
+DMR analysis for F.AD-M.AD
+```{r DMR analysis for F.AD-M.AD}
+# subset F.AD and M.AD
+mVal_age_adj_fad_mad <- mVal_age_adj[ , mVal_age_adj$sex.ad_pqad == "F.AD" | mVal_age_adj$sex.ad_pqad == "M.AD"]
+
+# make design matrix
+design_fad_mad <- model.matrix(~ 0 + factor(mVal_age_adj_fad_mad$sex.ad_pqad))
+colnames(design_fad_mad) <- levels(factor(mVal_age_adj_fad_mad$sex.ad_pqad))
+
+# make contrast matrix
+contrast_fad_mad <- makeContrasts(contrasts = "F.AD-M.AD", levels = design_fad_mad)
+
+# DMR
+Annotation_fad_mad <- cpg.annotate(object = exprs(mVal_age_adj_fad_mad), datatype = "array", what = "M", analysis.type = "differential", design = design_fad_mad, contrasts = TRUE, cont.matrix = contrast_fad_mad, coef = "F.AD-M.AD", arraytype = "EPIC")
+
+DMRs_fad_mad <- dmrcate(Annotation_fad_mad, lambda=1000, C=2)
+```
+
+
+DMR analysis for F.Normal-M.Normal
+```{r DMR analysis for F.Normal-M.Normal}
+# subset F.Normal and M.Normal
+mVal_age_adj_fnl_mnl <- mVal_age_adj[ , mVal_age_adj$sex.ad_pqad == "F.Normal" | mVal_age_adj$sex.ad_pqad == "M.Normal"]
+
+# make design matrix
+design_fnl_mnl <- model.matrix(~ 0 + factor(mVal_age_adj_fnl_mnl$sex.ad_pqad))
+colnames(design_fnl_mnl) <- levels(factor(mVal_age_adj_fnl_mnl$sex.ad_pqad))
+
+# make contrast matrix
+contrast_fnl_mnl <- makeContrasts(contrasts = "F.Normal-M.Normal", levels = design_fnl_mnl)
+
+# DMR
+Annotation_fnl_mnl <- cpg.annotate(object = exprs(mVal_age_adj_fnl_mnl), datatype = "array", what = "M", analysis.type = "differential", design = design_fnl_mnl, contrasts = TRUE, cont.matrix = contrast_fnl_mnl, coef = "F.Normal-M.Normal", arraytype = "EPIC")
+
+DMRs_fnl_mnl <- dmrcate(Annotation_fnl_mnl, lambda=1000, C=2)
+```
+
+
+Writing the results
+```{r writing the DMP results, message = F}
+# DMP results
+res_dmp_all <- list(DMRs_ad_nl$results, DMRs_fad_mad$results, DMRs_fnl_mnl$results)
+
+# output names
+out_names <- paste0("/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj_plate/", c("DMR_ad_nl.tsv", "DMR_fad_mad.tsv", "DMR_fnl_mnl.tsv"))
+
+# write the results
+invisible(mapply(fwrite, res_dmp_all, out_names, MoreArgs = list(row.names = T, sep = "\t")))
+```

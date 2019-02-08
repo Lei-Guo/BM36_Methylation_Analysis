@@ -146,7 +146,7 @@ $(document).ready(function () {
 </style>
 <script>
 $(document).ready(function () {
-  window.initializeSourceEmbed("make_expressionset.Rmd");
+  window.initializeSourceEmbed("DMP_analysis_erming_adj.Rmd");
   window.initializeCodeFolding("show" === "show");
 });
 </script>
@@ -176,399 +176,772 @@ $(document).ready(function () {
 
 
 <!-- rnb-text-begin -->
-<p>Render the notebook with commandline Rscript -e “rmarkdown::render(‘make_expressionset.Rmd’)”</p>
+<p>Rscript -e “rmarkdown::render(‘DMP_analysis_erming_adj.Rmd’)”</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbImxpYnJhcnkoZGF0YS50YWJsZSkiLCJsaWJyYXJ5KHJlYWR4bCkiLCJsaWJyYXJ5KHN0cmluZ3IpIiwibGlicmFyeShsaW1tYSkiLCJsaWJyYXJ5KEJpb2Jhc2UpIl19 -->
-<pre class="r"><code>library(data.table)
-library(readxl)
-library(stringr)
+<!-- rnb-source-begin eyJkYXRhIjpbImxpYnJhcnkoSWxsdW1pbmFIdW1hbk1ldGh5bGF0aW9uRVBJQ2Fubm8uaWxtMTBiMi5oZzE5KSIsImxpYnJhcnkobGltbWEpIiwibGlicmFyeShkYXRhLnRhYmxlKSIsImxpYnJhcnkoRE1SY2F0ZSkiXX0= -->
+<pre class="r"><code>library(IlluminaHumanMethylationEPICanno.ilm10b2.hg19)
 library(limma)
-library(Biobase)</code></pre>
+library(data.table)
+library(DMRcate)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>Reading adjusted beta values</p>
+<p>Reading expressionsets</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZGp1c3RlZCBiZXRhIHZhbHVlcyIsImludmlzaWJsZShiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBmcmVhZChcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzL0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopIDwtIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqJFYxIiwiYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGpbLCAtMV0iLCIiLCIjIGNvbnZlcnQgYmV0YVZhbF9zZXhfYWRqIHRvIG1hdHJpeCIsImJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIGFzLm1hdHJpeChiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race adjusted beta values
-invisible(betaVal_plate_pmi_race_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_plate_pmi_race_adjusted.tsv&quot;, data.table = F))
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZCBzZXggYWRqdXN0ZWQgZXhwcmVzc2lvbnNldCIsIm1WYWxfYWdlX3NleF9hZGogPC0gcmVhZFJEUyhcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvY292YXJpYXRlX2FkanVzdGVkX0JldGFfTV9Fcm1pbmcvYmF0Y2hfc3ViRGF0ZS9leHByc2V0X01fVmFsdWVzX1FDZWRfbm9ybWxpemVkX2JhdGNoX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqdXN0ZWQucmRzXCIpIiwiIiwiIyByZWFkIG5vbi1zZXgtYWRqdXN0ZWQgZXhwcmVzc2lvbnNldCIsIm1WYWxfYWdlX2FkaiA8LSByZWFkUkRTKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9jb3ZhcmlhdGVfYWRqdXN0ZWRfQmV0YV9NX0VybWluZy9iYXRjaF9zdWJEYXRlL2V4cHJzZXRfTV9WYWx1ZXNfUUNlZF9ub3JtbGl6ZWRfYmF0Y2hfcGxhdGVfcG1pX3JhY2VfYWdlX2FkanVzdGVkLnJkc1wiKSJdfQ== -->
+<pre class="r"><code># read sex adjusted expressionset
+mVal_age_sex_adj &lt;- readRDS(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/batch_subDate/exprset_M_Values_QCed_normlized_batch_plate_pmi_race_age_sex_adjusted.rds&quot;)
 
-# naming the rows with the probe column
-rownames(betaVal_plate_pmi_race_adj) &lt;- betaVal_plate_pmi_race_adj$V1
-betaVal_plate_pmi_race_adj &lt;- betaVal_plate_pmi_race_adj[, -1]
-
-# convert betaVal_sex_adj to matrix
-betaVal_plate_pmi_race_adj &lt;- as.matrix(betaVal_plate_pmi_race_adj)</code></pre>
+# read non-sex-adjusted expressionset
+mVal_age_adj &lt;- readRDS(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/covariate_adjusted_Beta_M_Erming/batch_subDate/exprset_M_Values_QCed_normlized_batch_plate_pmi_race_age_adjusted.rds&quot;)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>Getting the beadarray annotation data</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZ2UgYWRqdXN0ZWQgYmV0YSB2YWx1ZXMiLCJpbnZpc2libGUoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vQmV0YVZhbHMvQmV0YV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGokVjEiLCJiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqWywgLTFdIiwiIiwiIyBjb252ZXJ0IGJldGFWYWxfc2V4X2FkaiB0byBtYXRyaXgiLCJiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gYXMubWF0cml4KGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race age adjusted beta values
-invisible(betaVal_plate_pmi_race_age_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_plate_pmi_race_age_adjusted.tsv&quot;, data.table = F))
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgZ2V0IHRoZSBiZWFkYXJyYXkgYW5ub3RhdGlvbiBkYXRhIiwiYW5uX2VwaWMgPC0gZ2V0QW5ub3RhdGlvbihJbGx1bWluYUh1bWFuTWV0aHlsYXRpb25FUElDYW5uby5pbG0xMGIyLmhnMTkpIiwiIiwiYW5uODUwa1N1YiA8LSBhbm5fZXBpY1ttYXRjaChyb3duYW1lcyhtVmFsX2FnZV9zZXhfYWRqKSwgYW5uX2VwaWMkTmFtZSksIGMoMTo0LDEyOjE5LDI0Om5jb2woYW5uX2VwaWMpKV0iXX0= -->
+<pre class="r"><code># get the beadarray annotation data
+ann_epic &lt;- getAnnotation(IlluminaHumanMethylationEPICanno.ilm10b2.hg19)
 
-# naming the rows with the probe column
-rownames(betaVal_plate_pmi_race_age_adj) &lt;- betaVal_plate_pmi_race_age_adj$V1
-betaVal_plate_pmi_race_age_adj &lt;- betaVal_plate_pmi_race_age_adj[, -1]
-
-# convert betaVal_sex_adj to matrix
-betaVal_plate_pmi_race_age_adj &lt;- as.matrix(betaVal_plate_pmi_race_age_adj)</code></pre>
+ann850kSub &lt;- ann_epic[match(rownames(mVal_age_sex_adj), ann_epic$Name), c(1:4,12:19,24:ncol(ann_epic))]</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>Checking sample number in each group</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWRqdXN0ZWQgYmV0YSB2YWx1ZXMiLCJpbnZpc2libGUoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vQmV0YVZhbHMvQmV0YV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGokVjEiLCJiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqWywgLTFdIiwiIiwiIyBjb252ZXJ0IGJldGFWYWxfc2V4X2FkaiB0byBtYXRyaXgiLCJiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gYXMubWF0cml4KGJldGFWYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race sex adjusted beta values
-invisible(betaVal_plate_pmi_race_sex_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_plate_pmi_race_sex_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(betaVal_plate_pmi_race_sex_adj) &lt;- betaVal_plate_pmi_race_sex_adj$V1
-betaVal_plate_pmi_race_sex_adj &lt;- betaVal_plate_pmi_race_sex_adj[, -1]
-
-# convert betaVal_sex_adj to matrix
-betaVal_plate_pmi_race_sex_adj &lt;- as.matrix(betaVal_plate_pmi_race_sex_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgZm9yIEFELU5MIGdyb3VwcyIsImFzLmRhdGEuZnJhbWUodGFibGUocERhdGEobVZhbF9hZ2Vfc2V4X2FkaikkcHFfYWQpKSJdfQ== -->
+<pre class="r"><code># for AD-NL groups
+as.data.frame(table(pData(mVal_age_sex_adj)$pq_ad))</code></pre>
 <!-- rnb-source-end -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["Var1"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["Freq"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"AD","2":"67"},{"1":"Moderate","2":"78"},{"1":"Normal","2":"51"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgZm9yIGFkLmFwb2VfcHFhZCBncm91cHMiLCJhcy5kYXRhLmZyYW1lKHRhYmxlKHBEYXRhKG1WYWxfYWdlX3NleF9hZGopJGFkLmFwb2VfcHFhZCkpIl19 -->
+<pre class="r"><code># for ad.apoe_pqad groups
+as.data.frame(table(pData(mVal_age_sex_adj)$ad.apoe_pqad))</code></pre>
+<!-- rnb-source-end -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["Var1"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["Freq"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"AD.23","2":"8"},{"1":"AD.33","2":"29"},{"1":"AD.34","2":"22"},{"1":"AD.44","2":"6"},{"1":"AD.Ambiguous","2":"1"},{"1":"AD.Unknown","2":"1"},{"1":"Moderate.23","2":"6"},{"1":"Moderate.33","2":"43"},{"1":"Moderate.34","2":"27"},{"1":"Moderate.44","2":"1"},{"1":"Moderate.Ambiguous","2":"1"},{"1":"Normal.22","2":"2"},{"1":"Normal.23","2":"13"},{"1":"Normal.33","2":"31"},{"1":"Normal.34","2":"3"},{"1":"Normal.Ambiguous","2":"1"},{"1":"Normal.Unknown","2":"1"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgZm9yIHNleC5hZC5hcG9lX3BxYWQgZ3JvdXBzIiwiYXMuZGF0YS5mcmFtZSh0YWJsZShwRGF0YShtVmFsX2FnZV9zZXhfYWRqKSRzZXguYWQuYXBvZV9wcWFkKSkiXX0= -->
+<pre class="r"><code># for sex.ad.apoe_pqad groups
+as.data.frame(table(pData(mVal_age_sex_adj)$sex.ad.apoe_pqad))</code></pre>
+<!-- rnb-source-end -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["Var1"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["Freq"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"F.AD.23","2":"3"},{"1":"F.AD.33","2":"16"},{"1":"F.AD.34","2":"15"},{"1":"F.AD.44","2":"3"},{"1":"F.AD.Ambiguous","2":"1"},{"1":"F.AD.Unknown","2":"1"},{"1":"F.Moderate.23","2":"5"},{"1":"F.Moderate.33","2":"31"},{"1":"F.Moderate.34","2":"20"},{"1":"F.Moderate.Ambiguous","2":"1"},{"1":"F.Normal.22","2":"2"},{"1":"F.Normal.23","2":"7"},{"1":"F.Normal.33","2":"14"},{"1":"F.Normal.34","2":"2"},{"1":"F.Normal.Unknown","2":"1"},{"1":"M.AD.23","2":"5"},{"1":"M.AD.33","2":"13"},{"1":"M.AD.34","2":"7"},{"1":"M.AD.44","2":"3"},{"1":"M.Moderate.23","2":"1"},{"1":"M.Moderate.33","2":"12"},{"1":"M.Moderate.34","2":"7"},{"1":"M.Moderate.44","2":"1"},{"1":"M.Normal.23","2":"6"},{"1":"M.Normal.33","2":"17"},{"1":"M.Normal.34","2":"1"},{"1":"M.Normal.Ambiguous","2":"1"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<div id="between-ad-and-normal" class="section level2">
+<h2>Between AD and Normal</h2>
+<p>DE analysis for AD-NL</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWdlIGFkanVzdGVkIGJldGEgdmFsdWVzIiwiaW52aXNpYmxlKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gZnJlYWQoXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9CZXRhVmFscy9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikgPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiRWMSIsImJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkalssIC0xXSIsIiIsIiMgY29udmVydCBiZXRhVmFsX3NleF9hZGogdG8gbWF0cml4IiwiYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBhcy5tYXRyaXgoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race sex age adjusted beta values
-invisible(betaVal_plate_pmi_race_age_sex_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals/Beta_Values_qced_normlized_plate_pmi_race_age_sex_adjusted.tsv&quot;, data.table = F))
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEFEIGFuZCBOb3JtYWwiLCJtVmFsX2FnZV9zZXhfYWRqX2FkX25sIDwtIG1WYWxfYWdlX3NleF9hZGpbICwgbVZhbF9hZ2Vfc2V4X2FkaiRwcV9hZCA9PSBcIkFEXCIgfCBtVmFsX2FnZV9zZXhfYWRqJHBxX2FkID09IFwiTm9ybWFsXCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fYWRfbmwgPC0gbW9kZWwubWF0cml4KH4gMCArIGZhY3RvcihtVmFsX2FnZV9zZXhfYWRqX2FkX25sJHBxX2FkKSkiLCJjb2xuYW1lcyhkZXNpZ25fYWRfbmwpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2Vfc2V4X2Fkal9hZF9ubCRwcV9hZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X2FkX25sIDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gXCJBRC1Ob3JtYWxcIiwgbGV2ZWxzID0gZGVzaWduX2FkX25sKSIsIiIsIiMgZGUgYW5hbHlpcyIsImZpdF9hZF9ubCA8LSBsbUZpdChtVmFsX2FnZV9zZXhfYWRqX2FkX25sLCBkZXNpZ25fYWRfbmwpIiwiZml0X2FkX25sXzIgPC0gY29udHJhc3RzLmZpdChmaXRfYWRfbmwsIGNvbnRyYXN0X2FkX25sKSIsImZpdF9hZF9ubF8yIDwtIGVCYXllcyhmaXRfYWRfbmxfMikiLCIiLCIjIGxvb2sgYXQgdGhlIG51bWJlcnMgb2YgRE0gQ3BHcyBhdCBGRFIgPCAwLjA1Iiwic3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfYWRfbmxfMikpIl19 -->
+<pre class="r"><code># subset AD and Normal
+mVal_age_sex_adj_ad_nl &lt;- mVal_age_sex_adj[ , mVal_age_sex_adj$pq_ad == &quot;AD&quot; | mVal_age_sex_adj$pq_ad == &quot;Normal&quot;]
 
-# naming the rows with the probe column
-rownames(betaVal_plate_pmi_race_age_sex_adj) &lt;- betaVal_plate_pmi_race_age_sex_adj$V1
-betaVal_plate_pmi_race_age_sex_adj &lt;- betaVal_plate_pmi_race_age_sex_adj[, -1]
+# make design matrix
+design_ad_nl &lt;- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad_nl$pq_ad))
+colnames(design_ad_nl) &lt;- levels(factor(mVal_age_sex_adj_ad_nl$pq_ad))
 
-# convert betaVal_sex_adj to matrix
-betaVal_plate_pmi_race_age_sex_adj &lt;- as.matrix(betaVal_plate_pmi_race_age_sex_adj)</code></pre>
+# make contrast matrix
+contrast_ad_nl &lt;- makeContrasts(contrasts = &quot;AD-Normal&quot;, levels = design_ad_nl)
+
+# de analyis
+fit_ad_nl &lt;- lmFit(mVal_age_sex_adj_ad_nl, design_ad_nl)
+fit_ad_nl_2 &lt;- contrasts.fit(fit_ad_nl, contrast_ad_nl)
+fit_ad_nl_2 &lt;- eBayes(fit_ad_nl_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_ad_nl_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Reading adjusted M values</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZGp1c3RlZCBNIHZhbHVlcyIsImludmlzaWJsZShNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBmcmVhZChcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzL01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqJFYxIiwiTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGpbLCAtMV0iLCIiLCIjIGNvbnZlcnQgTVZhbF9zZXhfYWRqIHRvIG1hdHJpeCIsIk1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIGFzLm1hdHJpeChNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race adjusted M values
-invisible(MVal_plate_pmi_race_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_plate_pmi_race_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(MVal_plate_pmi_race_adj) &lt;- MVal_plate_pmi_race_adj$V1
-MVal_plate_pmi_race_adj &lt;- MVal_plate_pmi_race_adj[, -1]
-
-# convert MVal_sex_adj to matrix
-MVal_plate_pmi_race_adj &lt;- as.matrix(MVal_plate_pmi_race_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZ2UgYWRqdXN0ZWQgTSB2YWx1ZXMiLCJpbnZpc2libGUoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSA8LSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGokVjEiLCJNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqWywgLTFdIiwiIiwiIyBjb252ZXJ0IE1WYWxfc2V4X2FkaiB0byBtYXRyaXgiLCJNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gYXMubWF0cml4KE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race age adjusted M values
-invisible(MVal_plate_pmi_race_age_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_plate_pmi_race_age_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(MVal_plate_pmi_race_age_adj) &lt;- MVal_plate_pmi_race_age_adj$V1
-MVal_plate_pmi_race_age_adj &lt;- MVal_plate_pmi_race_age_adj[, -1]
-
-# convert MVal_sex_adj to matrix
-MVal_plate_pmi_race_age_adj &lt;- as.matrix(MVal_plate_pmi_race_age_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWRqdXN0ZWQgTSB2YWx1ZXMiLCJpbnZpc2libGUoTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSA8LSBNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGokVjEiLCJNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqWywgLTFdIiwiIiwiIyBjb252ZXJ0IE1WYWxfc2V4X2FkaiB0byBtYXRyaXgiLCJNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gYXMubWF0cml4KE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race sex adjusted M values
-invisible(MVal_plate_pmi_race_sex_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_plate_pmi_race_sex_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(MVal_plate_pmi_race_sex_adj) &lt;- MVal_plate_pmi_race_sex_adj$V1
-MVal_plate_pmi_race_sex_adj &lt;- MVal_plate_pmi_race_sex_adj[, -1]
-
-# convert MVal_sex_adj to matrix
-MVal_plate_pmi_race_sex_adj &lt;- as.matrix(MVal_plate_pmi_race_sex_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWdlIGFkanVzdGVkIE0gdmFsdWVzIiwiaW52aXNpYmxlKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gZnJlYWQoXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9NVmFscy9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkanVzdGVkLnRzdlwiLCBkYXRhLnRhYmxlID0gRikpIiwiIiwiIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uIiwicm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikgPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiRWMSIsIk1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkalssIC0xXSIsIiIsIiMgY29udmVydCBNVmFsX3NleF9hZGogdG8gbWF0cml4IiwiTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBhcy5tYXRyaXgoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># reading batch pmi race sex age adjusted M values
-invisible(MVal_plate_pmi_race_age_sex_adj &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals/M_Values_qced_normlized_plate_pmi_race_age_sex_adjusted.tsv&quot;, data.table = F))
-
-# naming the rows with the probe column
-rownames(MVal_plate_pmi_race_age_sex_adj) &lt;- MVal_plate_pmi_race_age_sex_adj$V1
-MVal_plate_pmi_race_age_sex_adj &lt;- MVal_plate_pmi_race_age_sex_adj[, -1]
-
-# convert MVal_sex_adj to matrix
-MVal_plate_pmi_race_age_sex_adj &lt;- as.matrix(MVal_plate_pmi_race_age_sex_adj)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Reading Meta files</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgcmVhZCBtZXRoeWxhdGlvbiBtZXRhIGluZm8iLCJtZXRhX21ldGggPC0gZnJlYWQoXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Jhd19kYXRhL21ldGFfbWV0aC5jc3ZcIikiLCIiLCIjIHJlYWQgUk5Bc2VxIG1ldGEgaW5mbyIsIm1ldGFfcm5hc2VxIDwtIGZyZWFkKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL3NoYXJlZC9tc2JiLXNlcS9EYXRhL21peGVkX21vZGVsX2NvcnJlY3Rpb25fdXBkYXRlZC9tc2JiLm1ldGEuQk1fMzYudHN2XCIpIiwiIiwiI2VkaXQgQVBPRSBhbmQgZGlhZ25vc2lzIGZvcm1hdCIsIm1ldGFfcm5hc2VxJEFQT0UgPC0gZ3N1YihcIi9cIiwgXCJcIiwgZ3N1YihcImVcIixcIlwiLCBtZXRhX3JuYXNlcSRBUE9FKSkiLCJtZXRhX3JuYXNlcSRBUE9FW2lzLm5hKG1ldGFfcm5hc2VxJEFQT0UpXSA8LSBcIlVua25vd25cIiIsIiIsIiNhZGQgbmV3IGdyb3VwIGNvbHVtbnMiLCJtZXRhX3JuYXNlcVssIGMoXCJzZXguYWQuYXBvZV9jZXJhZFwiLCBcImFkLmFwb2VfY2VyYWRcIiwgXCJzZXguYWRfY2VyYWRcIikgOj0gbGlzdChwYXN0ZShTRVhfaW5mZXJyZWQsIENFUkFELCBBUE9FLCBzZXAgPSBcIi5cIiksIHBhc3RlKENFUkFELCBBUE9FLCBzZXAgPSBcIi5cIiksIHBhc3RlKFNFWF9pbmZlcnJlZCwgQ0VSQUQsIHNlcCA9IFwiLlwiKSldIl19 -->
-<pre class="r"><code># read methylation meta info
-meta_meth &lt;- fread(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/meta_meth.csv&quot;)
-
-# read RNAseq meta info
-meta_rnaseq &lt;- fread(&quot;/sc/orga/projects/zhangb03a/shared/msbb-seq/Data/mixed_model_correction_updated/msbb.meta.BM_36.tsv&quot;)
-
-#edit APOE and diagnosis format
-meta_rnaseq$APOE &lt;- gsub(&quot;/&quot;, &quot;&quot;, gsub(&quot;e&quot;,&quot;&quot;, meta_rnaseq$APOE))
-meta_rnaseq$APOE[is.na(meta_rnaseq$APOE)] &lt;- &quot;Unknown&quot;
-
-#add new group columns
-meta_rnaseq[, c(&quot;sex.ad.apoe_cerad&quot;, &quot;ad.apoe_cerad&quot;, &quot;sex.ad_cerad&quot;) := list(paste(SEX_inferred, CERAD, APOE, sep = &quot;.&quot;), paste(CERAD, APOE, sep = &quot;.&quot;), paste(SEX_inferred, CERAD, sep = &quot;.&quot;))]</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Mapping IDs between meta_meth and meta_rnaseq</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiNyZWFkIGlkIG1hcCBmaWxlIGZvciBtZXRoeWxhdGlvbiBtZXRhIGZpbGUiLCJpZF9tYXBfZmlsZSA8LSByZWFkX3hsc3goXCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Jhd19kYXRhL01ldGh5bGF0aW9uQmFyY29kZVhTdWJOdW1YTWluZ2h1aVhXYW5nLnhsc3hcIiwgc2tpcCA9IDEwKSIsInNldERUKGlkX21hcF9maWxlKSIsIiNwYWQgdGhlIFN1Yk51bSB0byAxMCBkaWdpdHMiLCJpZF9tYXBfZmlsZSRTdWJOdW0gPC0gc3RyX3BhZChpZF9tYXBfZmlsZSRTdWJOdW0sIDEwLCBcImxlZnRcIiwgMCkiLCIiLCJpZF9tYXBfZmlsZSRTdWJOdW0gPC0gcGFzdGUwKFwiQU1QQURfTVNTTV9cIiwgaWRfbWFwX2ZpbGUkU3ViTnVtKSIsIiIsIiNtYXRjaCBJRHMgZm9yIG1ldGFfbWV0aCIsIm1ldGFfbWV0aCRTeW5hcHNlSUQgPC0gaWRfbWFwX2ZpbGUkU3ViTnVtW21hdGNoKG1ldGFfbWV0aCRTYW1wbGVfTmFtZSwgaWRfbWFwX2ZpbGUkU2FtcGxlX05hbWVfQmFyY29kZSldIiwiIiwiI0lEIG1hcHBpbmcgYmV0d2VlbiBtZXRhX3JuYXNlcSAmIG1ldGFfbWV0aCIsIklEX292ZXJsYXAgPC0gaW50ZXJzZWN0KG1ldGFfbWV0aCRTeW5hcHNlSUQsIG1ldGFfcm5hc2VxJFN5bmFwc2VJZCkiLCIiLCIjc3Vic2V0IG1ldGFfbWV0aCBieSBJRF9vdmVybGFwIiwibWV0YV9tZXRoIDwtIG1ldGFfbWV0aFtTeW5hcHNlSUQgJWluJSBJRF9vdmVybGFwXSIsIiIsIiMgYWRkIHNhbXBsZSBJRCBjb2x1bW4gdG8gbWV0YV9tZXRoIiwibWV0YV9tZXRoJFNhbXBsZUlEIDwtIHBhc3RlKG1ldGFfbWV0aCRTZW50cml4X0lELCBtZXRhX21ldGgkU2VudHJpeF9Qb3NpdGlvbiwgc2VwID0gXCJfXCIpIiwiIiwiIyBzdWJzZXQgbWV0YV9ybmFzZXEgYnkgSURfb3ZlcmxhcCIsIm1ldGFfcm5hc2VxIDwtIG1ldGFfcm5hc2VxW1N5bmFwc2VJZCAlaW4lIElEX292ZXJsYXBdIiwiIiwiIyBhZGQgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX3JuYXNlcSIsIm1ldGFfcm5hc2VxJFNhbXBsZUlEIDwtIG1ldGFfbWV0aCRTYW1wbGVJRFttYXRjaChtZXRhX3JuYXNlcSRTeW5hcHNlSWQsIG1ldGFfbWV0aCRTeW5hcHNlSUQpXSIsIiIsIiMgYWRkIGFub3RoZXIgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX3JuYXNlcSIsIm1ldGFfcm5hc2VxJFNhbXBsZUlEXzIgPC0gaWRfbWFwX2ZpbGUkU2FtcGxlX0lEW21hdGNoKG1ldGFfcm5hc2VxJFN5bmFwc2VJZCwgaWRfbWFwX2ZpbGUkU3ViTnVtKV0iLCIiLCIjIGFkZCBTYW1wbGUgYmF0Y2ggY29sdW1uIHRvIG1ldGFfcm5hc2VxIiwibWV0YV9ybmFzZXEkU2VudHJpeF9JRCA8LSBtZXRhX21ldGgkU2VudHJpeF9JRFttYXRjaChtZXRhX3JuYXNlcSRTeW5hcHNlSWQsIG1ldGFfbWV0aCRTeW5hcHNlSUQpXSJdfQ== -->
-<pre class="r"><code>#read id map file for methylation meta file
-id_map_file &lt;- read_xlsx(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/raw_data/MethylationBarcodeXSubNumXMinghuiXWang.xlsx&quot;, skip = 10)
-setDT(id_map_file)
-#pad the SubNum to 10 digits
-id_map_file$SubNum &lt;- str_pad(id_map_file$SubNum, 10, &quot;left&quot;, 0)
-
-id_map_file$SubNum &lt;- paste0(&quot;AMPAD_MSSM_&quot;, id_map_file$SubNum)
-
-#match IDs for meta_meth
-meta_meth$SynapseID &lt;- id_map_file$SubNum[match(meta_meth$Sample_Name, id_map_file$Sample_Name_Barcode)]
-
-#ID mapping between meta_rnaseq &amp; meta_meth
-ID_overlap &lt;- intersect(meta_meth$SynapseID, meta_rnaseq$SynapseId)
-
-#subset meta_meth by ID_overlap
-meta_meth &lt;- meta_meth[SynapseID %in% ID_overlap]
-
-# add sample ID column to meta_meth
-meta_meth$SampleID &lt;- paste(meta_meth$Sentrix_ID, meta_meth$Sentrix_Position, sep = &quot;_&quot;)
-
-# subset meta_rnaseq by ID_overlap
-meta_rnaseq &lt;- meta_rnaseq[SynapseId %in% ID_overlap]
-
-# add sample ID column to meta_rnaseq
-meta_rnaseq$SampleID &lt;- meta_meth$SampleID[match(meta_rnaseq$SynapseId, meta_meth$SynapseID)]
-
-# add another sample ID column to meta_rnaseq
-meta_rnaseq$SampleID_2 &lt;- id_map_file$Sample_ID[match(meta_rnaseq$SynapseId, id_map_file$SubNum)]
-
-# add Sample batch column to meta_rnaseq
-meta_rnaseq$Sentrix_ID &lt;- meta_meth$Sentrix_ID[match(meta_rnaseq$SynapseId, meta_meth$SynapseID)]</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Removing samples with ambiguous sex and AD info</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoibWV0YV9ybmFzZXEgPC0gbWV0YV9ybmFzZXFbIVNhbXBsZUlEXzIgJWluJSBjKFwiUFFEVzU0NFwiLCBcIlRWVUY2MjBcIiwgXCJLQVNUNDE3XCIsIFwiRExVSDkzNlwiLCBcIkVPWVMwMTlcIikgXSJ9 -->
-<pre class="r"><code>meta_rnaseq &lt;- meta_rnaseq[!SampleID_2 %in% c(&quot;PQDW544&quot;, &quot;TVUF620&quot;, &quot;KAST417&quot;, &quot;DLUH936&quot;, &quot;EOYS019&quot;) ]</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Matching sample order between meta_rnaseq and beta/m matricies</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgY29sdW1uIG9yZGVyIGlzIHNhbWUgZm9yIGFsbCBiZXRhIG1hdHJpY2llcyIsInNhcHBseShsaXN0KGNvbG5hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSwgY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSwgY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSwgY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopLCBjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopLCBjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopLCBjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKSksIGlkZW50aWNhbCwgY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikpIl19 -->
-<pre class="r"><code># check if column order is same for all beta matricies
-sapply(list(colnames(betaVal_plate_pmi_race_adj), colnames(betaVal_plate_pmi_race_age_adj), colnames(betaVal_plate_pmi_race_sex_adj), colnames(MVal_plate_pmi_race_adj), colnames(MVal_plate_pmi_race_age_adj), colnames(MVal_plate_pmi_race_sex_adj), colnames(MVal_plate_pmi_race_age_sex_adj)), identical, colnames(betaVal_plate_pmi_race_age_sex_adj))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUUgVFJVRSBUUlVFIFRSVUUgVFJVRSBUUlVFIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEFELU5vcm1hbFxuRG93biAgICAgICAgNTY0NlxuTm90U2lnICAgIDc2MzE4OFxuVXAgICAgICAgICAgNzY3NFxuIn0= -->
+<pre><code>       AD-Normal
+Down        5646
+NotSig    763188
+Up          7674</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgbWF0Y2ggbWV0YV9ybmFzZXEgYW5kIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqIHNhbXBsZSBvcmRlciIsIm1ldGFfcm5hc2VxIDwtIG1ldGFfcm5hc2VxW21hdGNoKGNvbG5hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSwgbWV0YV9ybmFzZXEkU2FtcGxlSUQpLCBdIiwic2V0REYobWV0YV9ybmFzZXEpIiwicm93bmFtZXMobWV0YV9ybmFzZXEpIDwtIG1ldGFfcm5hc2VxJFNhbXBsZUlEIl19 -->
-<pre class="r"><code># match meta_rnaseq and betaVal_plate_pmi_race_adj sample order
-meta_rnaseq &lt;- meta_rnaseq[match(colnames(betaVal_plate_pmi_race_adj), meta_rnaseq$SampleID), ]
-setDF(meta_rnaseq)
-rownames(meta_rnaseq) &lt;- meta_rnaseq$SampleID</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2FkX25sIDwtIHRvcFRhYmxlKGZpdF9hZF9ubF8yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_ad_nl &lt;- topTable(fit_ad_nl_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>Making expressionset for beta values</p>
+<p>DE analysis for AD.34-NL.34</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiBhcmUgc2FtZSIsImlkZW50aWNhbChjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkiXX0= -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and betaVal_plate_pmi_race_adj are same
-identical(colnames(betaVal_plate_pmi_race_adj), rownames(meta_rnaseq))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEFELjM0IGFuZCBOb3JtYWwuMzQiLCJtVmFsX2FnZV9zZXhfYWRqX2FkMzRfbmwzNCA8LSBtVmFsX2FnZV9zZXhfYWRqWyAsIG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09IFwiQUQuMzRcIiB8IG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09IFwiTm9ybWFsLjM0XCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fYWQzNF9ubDM0IDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2Vfc2V4X2Fkal9hZDM0X25sMzQkYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fYWQzNF9ubDM0KSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQzNF9ubDM0JGFkLmFwb2VfcHFhZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X2FkMzRfbmwzNCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiQUQuMzQtTm9ybWFsLjM0XCIsIGxldmVscyA9IGRlc2lnbl9hZDM0X25sMzQpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2FkMzRfbmwzNCA8LSBsbUZpdChtVmFsX2FnZV9zZXhfYWRqX2FkMzRfbmwzNCwgZGVzaWduX2FkMzRfbmwzNCkiLCJmaXRfYWQzNF9ubDM0XzIgPC0gY29udHJhc3RzLmZpdChmaXRfYWQzNF9ubDM0LCBjb250cmFzdF9hZDM0X25sMzQpIiwiZml0X2FkMzRfbmwzNF8yIDwtIGVCYXllcyhmaXRfYWQzNF9ubDM0XzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2FkMzRfbmwzNF8yKSkiXX0= -->
+<pre class="r"><code># subset AD.34 and Normal.34
+mVal_age_sex_adj_ad34_nl34 &lt;- mVal_age_sex_adj[ , mVal_age_sex_adj$ad.apoe_pqad == &quot;AD.34&quot; | mVal_age_sex_adj$ad.apoe_pqad == &quot;Normal.34&quot;]
+
+# make design matrix
+design_ad34_nl34 &lt;- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad34_nl34$ad.apoe_pqad))
+colnames(design_ad34_nl34) &lt;- levels(factor(mVal_age_sex_adj_ad34_nl34$ad.apoe_pqad))
+
+# make contrast matrix
+contrast_ad34_nl34 &lt;- makeContrasts(contrasts = &quot;AD.34-Normal.34&quot;, levels = design_ad34_nl34)
+
+# de analyis
+fit_ad34_nl34 &lt;- lmFit(mVal_age_sex_adj_ad34_nl34, design_ad34_nl34)
+fit_ad34_nl34_2 &lt;- contrasts.fit(fit_ad34_nl34, contrast_ad34_nl34)
+fit_ad34_nl34_2 &lt;- eBayes(fit_ad34_nl34_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_ad34_nl34_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEFELjM0LU5vcm1hbC4zNFxuRG93biAgICAgICAgICAgICAgICAgMFxuTm90U2lnICAgICAgICAgIDc3NjUwN1xuVXAgICAgICAgICAgICAgICAgICAgMVxuIn0= -->
+<pre><code>       AD.34-Normal.34
+Down                 0
+NotSig          776507
+Up                   1</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gbmV3KFwiQW5ub3RhdGVkRGF0YUZyYW1lXCIsIGRhdGEgPSBtZXRhX3JuYXNlcSkiLCIiLCIjIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiIsImV4cHJzZXRfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiwgcGhlbm9EYXRhID0gcGhlbm9EYXRhX2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSJdfQ== -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_betaVal_plate_pmi_race_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for betaVal_plate_pmi_race_adj
-exprset_betaVal_plate_pmi_race_adj &lt;- ExpressionSet(assayData = betaVal_plate_pmi_race_adj, phenoData = phenoData_betaVal_plate_pmi_race_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2FkMzRfbmwzNCA8LSB0b3BUYWJsZShmaXRfYWQzNF9ubDM0XzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikiXX0= -->
+<pre class="r"><code># save de results
+res_ad34_nl34 &lt;- topTable(fit_ad34_nl34_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>DE analysis for AD.33-NL.33</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogYXJlIHNhbWUiLCJpZGVudGljYWwoY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKSJdfQ== -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and betaVal_plate_pmi_race_age_adj are same
-identical(colnames(betaVal_plate_pmi_race_age_adj), rownames(meta_rnaseq))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEFELjMzIGFuZCBOb3JtYWwuMzMiLCJtVmFsX2FnZV9zZXhfYWRqX2FkMzNfbmwzMyA8LSBtVmFsX2FnZV9zZXhfYWRqWyAsIG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09IFwiQUQuMzNcIiB8IG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09IFwiTm9ybWFsLjMzXCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fYWQzM19ubDMzIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2Vfc2V4X2Fkal9hZDMzX25sMzMkYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fYWQzM19ubDMzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQzM19ubDMzJGFkLmFwb2VfcHFhZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X2FkMzNfbmwzMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiQUQuMzMtTm9ybWFsLjMzXCIsIGxldmVscyA9IGRlc2lnbl9hZDMzX25sMzMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2FkMzNfbmwzMyA8LSBsbUZpdChtVmFsX2FnZV9zZXhfYWRqX2FkMzNfbmwzMywgZGVzaWduX2FkMzNfbmwzMykiLCJmaXRfYWQzM19ubDMzXzIgPC0gY29udHJhc3RzLmZpdChmaXRfYWQzM19ubDMzLCBjb250cmFzdF9hZDMzX25sMzMpIiwiZml0X2FkMzNfbmwzM18yIDwtIGVCYXllcyhmaXRfYWQzM19ubDMzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2FkMzNfbmwzM18yKSkiXX0= -->
+<pre class="r"><code># subset AD.33 and Normal.33
+mVal_age_sex_adj_ad33_nl33 &lt;- mVal_age_sex_adj[ , mVal_age_sex_adj$ad.apoe_pqad == &quot;AD.33&quot; | mVal_age_sex_adj$ad.apoe_pqad == &quot;Normal.33&quot;]
+
+# make design matrix
+design_ad33_nl33 &lt;- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad33_nl33$ad.apoe_pqad))
+colnames(design_ad33_nl33) &lt;- levels(factor(mVal_age_sex_adj_ad33_nl33$ad.apoe_pqad))
+
+# make contrast matrix
+contrast_ad33_nl33 &lt;- makeContrasts(contrasts = &quot;AD.33-Normal.33&quot;, levels = design_ad33_nl33)
+
+# de analyis
+fit_ad33_nl33 &lt;- lmFit(mVal_age_sex_adj_ad33_nl33, design_ad33_nl33)
+fit_ad33_nl33_2 &lt;- contrasts.fit(fit_ad33_nl33, contrast_ad33_nl33)
+fit_ad33_nl33_2 &lt;- eBayes(fit_ad33_nl33_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_ad33_nl33_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEFELjMzLU5vcm1hbC4zM1xuRG93biAgICAgICAgICAgICAgICAgMFxuTm90U2lnICAgICAgICAgIDc3NjUwOFxuVXAgICAgICAgICAgICAgICAgICAgMFxuIn0= -->
+<pre><code>       AD.33-Normal.33
+Down                 0
+NotSig          776508
+Up                   0</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIG5ldyhcIkFubm90YXRlZERhdGFGcmFtZVwiLCBkYXRhID0gbWV0YV9ybmFzZXEpIiwiIiwiIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIiwiZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopIl19 -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_betaVal_plate_pmi_race_age_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for betaVal_plate_pmi_race_age_adj
-exprset_betaVal_plate_pmi_race_age_adj &lt;- ExpressionSet(assayData = betaVal_plate_pmi_race_age_adj, phenoData = phenoData_betaVal_plate_pmi_race_age_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2FkMzNfbmwzMyA8LSB0b3BUYWJsZShmaXRfYWQzM19ubDMzXzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikiXX0= -->
+<pre class="r"><code># save de results
+res_ad33_nl33 &lt;- topTable(fit_ad33_nl33_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>DE analysis for AD.23-NL.23</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIGFyZSBzYW1lIiwiaWRlbnRpY2FsKGNvbG5hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopLCByb3duYW1lcyhtZXRhX3JuYXNlcSkpIl19 -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and betaVal_plate_pmi_race_age_sex_adj are same
-identical(colnames(betaVal_plate_pmi_race_age_sex_adj), rownames(meta_rnaseq))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEFELjIzIGFuZCBOb3JtYWwuMjMiLCJtVmFsX2FnZV9zZXhfYWRqX2FkMjNfbmwyMyA8LSBtVmFsX2FnZV9zZXhfYWRqWyAsIG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09IFwiQUQuMjNcIiB8IG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09IFwiTm9ybWFsLjIzXCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fYWQyM19ubDIzIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2Vfc2V4X2Fkal9hZDIzX25sMjMkYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fYWQyM19ubDIzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQyM19ubDIzJGFkLmFwb2VfcHFhZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X2FkMjNfbmwyMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiQUQuMjMtTm9ybWFsLjIzXCIsIGxldmVscyA9IGRlc2lnbl9hZDIzX25sMjMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2FkMjNfbmwyMyA8LSBsbUZpdChtVmFsX2FnZV9zZXhfYWRqX2FkMjNfbmwyMywgZGVzaWduX2FkMjNfbmwyMykiLCJmaXRfYWQyM19ubDIzXzIgPC0gY29udHJhc3RzLmZpdChmaXRfYWQyM19ubDIzLCBjb250cmFzdF9hZDIzX25sMjMpIiwiZml0X2FkMjNfbmwyM18yIDwtIGVCYXllcyhmaXRfYWQyM19ubDIzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2FkMjNfbmwyM18yKSkiXX0= -->
+<pre class="r"><code># subset AD.23 and Normal.23
+mVal_age_sex_adj_ad23_nl23 &lt;- mVal_age_sex_adj[ , mVal_age_sex_adj$ad.apoe_pqad == &quot;AD.23&quot; | mVal_age_sex_adj$ad.apoe_pqad == &quot;Normal.23&quot;]
+
+# make design matrix
+design_ad23_nl23 &lt;- model.matrix(~ 0 + factor(mVal_age_sex_adj_ad23_nl23$ad.apoe_pqad))
+colnames(design_ad23_nl23) &lt;- levels(factor(mVal_age_sex_adj_ad23_nl23$ad.apoe_pqad))
+
+# make contrast matrix
+contrast_ad23_nl23 &lt;- makeContrasts(contrasts = &quot;AD.23-Normal.23&quot;, levels = design_ad23_nl23)
+
+# de analyis
+fit_ad23_nl23 &lt;- lmFit(mVal_age_sex_adj_ad23_nl23, design_ad23_nl23)
+fit_ad23_nl23_2 &lt;- contrasts.fit(fit_ad23_nl23, contrast_ad23_nl23)
+fit_ad23_nl23_2 &lt;- eBayes(fit_ad23_nl23_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_ad23_nl23_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEFELjIzLU5vcm1hbC4yM1xuRG93biAgICAgICAgICAgICAgICAgMFxuTm90U2lnICAgICAgICAgIDc3NjUwOFxuVXAgICAgICAgICAgICAgICAgICAgMFxuIn0= -->
+<pre><code>       AD.23-Normal.23
+Down                 0
+NotSig          776508
+Up                   0</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBuZXcoXCJBbm5vdGF0ZWREYXRhRnJhbWVcIiwgZGF0YSA9IG1ldGFfcm5hc2VxKSIsIiIsIiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGoiLCJleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_betaVal_plate_pmi_race_age_sex_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for betaVal_plate_pmi_race_age_sex_adj
-exprset_betaVal_plate_pmi_race_age_sex_adj &lt;- ExpressionSet(assayData = betaVal_plate_pmi_race_age_sex_adj, phenoData = phenoData_betaVal_plate_pmi_race_age_sex_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2FkMjNfbmwyMyA8LSB0b3BUYWJsZShmaXRfYWQyM19ubDIzXzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikiXX0= -->
+<pre class="r"><code># save de results
+res_ad23_nl23 &lt;- topTable(fit_ad23_nl23_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>DE analysis for F.AD-F.NL</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogYXJlIHNhbWUiLCJpZGVudGljYWwoY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKSJdfQ== -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and betaVal_plate_pmi_race_sex_adj are same
-identical(colnames(betaVal_plate_pmi_race_sex_adj), rownames(meta_rnaseq))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuQUQgYW5kIEYuTm9ybWFsIiwibVZhbF9hZ2VfYWRqX2ZhZF9mbmwgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWRfcHFhZCA9PSBcIkYuQURcIiB8IG1WYWxfYWdlX2FkaiRzZXguYWRfcHFhZCA9PSBcIkYuTm9ybWFsXCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fZmFkX2ZubCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWRfZm5sJHNleC5hZF9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fZmFkX2ZubCkgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfZmFkX2ZubCRzZXguYWRfcHFhZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X2ZhZF9mbmwgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSBcIkYuQUQtRi5Ob3JtYWxcIiwgbGV2ZWxzID0gZGVzaWduX2ZhZF9mbmwpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZhZF9mbmwgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX2ZhZF9mbmwsIGRlc2lnbl9mYWRfZm5sKSIsImZpdF9mYWRfZm5sXzIgPC0gY29udHJhc3RzLmZpdChmaXRfZmFkX2ZubCwgY29udHJhc3RfZmFkX2ZubCkiLCJmaXRfZmFkX2ZubF8yIDwtIGVCYXllcyhmaXRfZmFkX2ZubF8yKSIsIiIsIiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUiLCJzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9mYWRfZm5sXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.AD and F.Normal
+mVal_age_adj_fad_fnl &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad_pqad == &quot;F.AD&quot; | mVal_age_adj$sex.ad_pqad == &quot;F.Normal&quot;]
+
+# make design matrix
+design_fad_fnl &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fad_fnl$sex.ad_pqad))
+colnames(design_fad_fnl) &lt;- levels(factor(mVal_age_adj_fad_fnl$sex.ad_pqad))
+
+# make contrast matrix
+contrast_fad_fnl &lt;- makeContrasts(contrasts = &quot;F.AD-F.Normal&quot;, levels = design_fad_fnl)
+
+# de analyis
+fit_fad_fnl &lt;- lmFit(mVal_age_adj_fad_fnl, design_fad_fnl)
+fit_fad_fnl_2 &lt;- contrasts.fit(fit_fad_fnl, contrast_fad_fnl)
+fit_fad_fnl_2 &lt;- eBayes(fit_fad_fnl_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fad_fnl_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuQUQtRi5Ob3JtYWxcbkRvd24gICAgICAgICAgICAgICA0XG5Ob3RTaWcgICAgICAgIDc3NjQ4NlxuVXAgICAgICAgICAgICAgICAgMThcbiJ9 -->
+<pre><code>       F.AD-F.Normal
+Down               4
+NotSig        776486
+Up                18</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIG5ldyhcIkFubm90YXRlZERhdGFGcmFtZVwiLCBkYXRhID0gbWV0YV9ybmFzZXEpIiwiIiwiIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIiwiZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopIl19 -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_betaVal_plate_pmi_race_sex_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for betaVal_plate_pmi_race_sex_adj
-exprset_betaVal_plate_pmi_race_sex_adj &lt;- ExpressionSet(assayData = betaVal_plate_pmi_race_sex_adj, phenoData = phenoData_betaVal_plate_pmi_race_sex_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZhZF9mbmwgPC0gdG9wVGFibGUoZml0X2ZhZF9mbmxfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKSJdfQ== -->
+<pre class="r"><code># save de results
+res_fad_fnl &lt;- topTable(fit_fad_fnl_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>Making expressionset for M values</p>
+<p>DE analysis for F.AD.34-F.Normal.34</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiBhcmUgc2FtZSIsImlkZW50aWNhbChjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkiXX0= -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_adj are same
-identical(colnames(MVal_plate_pmi_race_adj), rownames(meta_rnaseq))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuQUQuMzQgYW5kIEYuTm9ybWFsLjM0IiwibVZhbF9hZ2VfYWRqX2ZhZDM0X2ZubDM0IDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSBcIkYuQUQuMzRcIiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiRi5Ob3JtYWwuMzRcIl0iLCIiLCIjIG1ha2UgZGVzaWduIG1hdHJpeCIsImRlc2lnbl9mYWQzNF9mbmwzNCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQzNF9mbmwzNCRzZXguYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fZmFkMzRfZm5sMzQpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX2ZhZDM0X2ZubDM0JHNleC5hZC5hcG9lX3BxYWQpKSIsIiIsIiMgbWFrZSBjb250cmFzdCBtYXRyaXgiLCJjb250cmFzdF9mYWQzNF9mbmwzNCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiRi5BRC4zNC1GLk5vcm1hbC4zNFwiLCBsZXZlbHMgPSBkZXNpZ25fZmFkMzRfZm5sMzQpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZhZDM0X2ZubDM0IDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mYWQzNF9mbmwzNCwgZGVzaWduX2ZhZDM0X2ZubDM0KSIsImZpdF9mYWQzNF9mbmwzNF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZhZDM0X2ZubDM0LCBjb250cmFzdF9mYWQzNF9mbmwzNCkiLCJmaXRfZmFkMzRfZm5sMzRfMiA8LSBlQmF5ZXMoZml0X2ZhZDM0X2ZubDM0XzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDM0X2ZubDM0XzIpKSJdfQ== -->
+<pre class="r"><code># subset F.AD.34 and F.Normal.34
+mVal_age_adj_fad34_fnl34 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.AD.34&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;F.Normal.34&quot;]
+
+# make design matrix
+design_fad34_fnl34 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fad34_fnl34$sex.ad.apoe_pqad))
+colnames(design_fad34_fnl34) &lt;- levels(factor(mVal_age_adj_fad34_fnl34$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fad34_fnl34 &lt;- makeContrasts(contrasts = &quot;F.AD.34-F.Normal.34&quot;, levels = design_fad34_fnl34)
+
+# de analyis
+fit_fad34_fnl34 &lt;- lmFit(mVal_age_adj_fad34_fnl34, design_fad34_fnl34)
+fit_fad34_fnl34_2 &lt;- contrasts.fit(fit_fad34_fnl34, contrast_fad34_fnl34)
+fit_fad34_fnl34_2 &lt;- eBayes(fit_fad34_fnl34_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fad34_fnl34_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuQUQuMzQtRi5Ob3JtYWwuMzRcbkRvd24gICAgICAgICAgICAgICAgICAgICAyXG5Ob3RTaWcgICAgICAgICAgICAgIDc3NjUwNlxuVXAgICAgICAgICAgICAgICAgICAgICAgIDBcbiJ9 -->
+<pre><code>       F.AD.34-F.Normal.34
+Down                     2
+NotSig              776506
+Up                       0</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gbmV3KFwiQW5ub3RhdGVkRGF0YUZyYW1lXCIsIGRhdGEgPSBtZXRhX3JuYXNlcSkiLCIiLCIjIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiIsImV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiwgcGhlbm9EYXRhID0gcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSJdfQ== -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_MVal_plate_pmi_race_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for MVal_plate_pmi_race_adj
-exprset_MVal_plate_pmi_race_adj &lt;- ExpressionSet(assayData = MVal_plate_pmi_race_adj, phenoData = phenoData_MVal_plate_pmi_race_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZhZDM0X2ZubDM0IDwtIHRvcFRhYmxlKGZpdF9mYWQzNF9mbmwzNF8yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fad34_fnl34 &lt;- topTable(fit_fad34_fnl34_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogYXJlIHNhbWUiLCJpZGVudGljYWwoY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKSJdfQ== -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_age_adj are same
-identical(colnames(MVal_plate_pmi_race_age_adj), rownames(meta_rnaseq))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuQUQuMzMgYW5kIEYuTm9ybWFsLjMzIiwibVZhbF9hZ2VfYWRqX2ZhZDMzX2ZubDMzIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSBcIkYuQUQuMzNcIiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiRi5Ob3JtYWwuMzNcIl0iLCIiLCIjIG1ha2UgZGVzaWduIG1hdHJpeCIsImRlc2lnbl9mYWQzM19mbmwzMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQzM19mbmwzMyRzZXguYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fZmFkMzNfZm5sMzMpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX2ZhZDMzX2ZubDMzJHNleC5hZC5hcG9lX3BxYWQpKSIsIiIsIiMgbWFrZSBjb250cmFzdCBtYXRyaXgiLCJjb250cmFzdF9mYWQzM19mbmwzMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiRi5BRC4zMy1GLk5vcm1hbC4zM1wiLCBsZXZlbHMgPSBkZXNpZ25fZmFkMzNfZm5sMzMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZhZDMzX2ZubDMzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mYWQzM19mbmwzMywgZGVzaWduX2ZhZDMzX2ZubDMzKSIsImZpdF9mYWQzM19mbmwzM18yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZhZDMzX2ZubDMzLCBjb250cmFzdF9mYWQzM19mbmwzMykiLCJmaXRfZmFkMzNfZm5sMzNfMiA8LSBlQmF5ZXMoZml0X2ZhZDMzX2ZubDMzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDMzX2ZubDMzXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.AD.33 and F.Normal.33
+mVal_age_adj_fad33_fnl33 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.AD.33&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;F.Normal.33&quot;]
+
+# make design matrix
+design_fad33_fnl33 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fad33_fnl33$sex.ad.apoe_pqad))
+colnames(design_fad33_fnl33) &lt;- levels(factor(mVal_age_adj_fad33_fnl33$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fad33_fnl33 &lt;- makeContrasts(contrasts = &quot;F.AD.33-F.Normal.33&quot;, levels = design_fad33_fnl33)
+
+# de analyis
+fit_fad33_fnl33 &lt;- lmFit(mVal_age_adj_fad33_fnl33, design_fad33_fnl33)
+fit_fad33_fnl33_2 &lt;- contrasts.fit(fit_fad33_fnl33, contrast_fad33_fnl33)
+fit_fad33_fnl33_2 &lt;- eBayes(fit_fad33_fnl33_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fad33_fnl33_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuQUQuMzMtRi5Ob3JtYWwuMzNcbkRvd24gICAgICAgICAgICAgICAgICAgICAwXG5Ob3RTaWcgICAgICAgICAgICAgIDc3NjUwOFxuVXAgICAgICAgICAgICAgICAgICAgICAgIDBcbiJ9 -->
+<pre><code>       F.AD.33-F.Normal.33
+Down                     0
+NotSig              776508
+Up                       0</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIG5ldyhcIkFubm90YXRlZERhdGFGcmFtZVwiLCBkYXRhID0gbWV0YV9ybmFzZXEpIiwiIiwiIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIiwiZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopIl19 -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_MVal_plate_pmi_race_age_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for MVal_plate_pmi_race_age_adj
-exprset_MVal_plate_pmi_race_age_adj &lt;- ExpressionSet(assayData = MVal_plate_pmi_race_age_adj, phenoData = phenoData_MVal_plate_pmi_race_age_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZhZDMzX2ZubDMzIDwtIHRvcFRhYmxlKGZpdF9mYWQzM19mbmwzM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fad33_fnl33 &lt;- topTable(fit_fad33_fnl33_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>DE analysis for F.AD.23-F.Normal.23</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIGFyZSBzYW1lIiwiaWRlbnRpY2FsKGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopLCByb3duYW1lcyhtZXRhX3JuYXNlcSkpIl19 -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_age_sex_adj are same
-identical(colnames(MVal_plate_pmi_race_age_sex_adj), rownames(meta_rnaseq))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuQUQuMjMgYW5kIEYuTm9ybWFsLjIzIiwibVZhbF9hZ2VfYWRqX2ZhZDIzX2ZubDIzIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSBcIkYuQUQuMjNcIiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiRi5Ob3JtYWwuMjNcIl0iLCIiLCIjIG1ha2UgZGVzaWduIG1hdHJpeCIsImRlc2lnbl9mYWQyM19mbmwyMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQyM19mbmwyMyRzZXguYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fZmFkMjNfZm5sMjMpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX2ZhZDIzX2ZubDIzJHNleC5hZC5hcG9lX3BxYWQpKSIsIiIsIiMgbWFrZSBjb250cmFzdCBtYXRyaXgiLCJjb250cmFzdF9mYWQyM19mbmwyMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiRi5BRC4yMy1GLk5vcm1hbC4yM1wiLCBsZXZlbHMgPSBkZXNpZ25fZmFkMjNfZm5sMjMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZhZDIzX2ZubDIzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mYWQyM19mbmwyMywgZGVzaWduX2ZhZDIzX2ZubDIzKSIsImZpdF9mYWQyM19mbmwyM18yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZhZDIzX2ZubDIzLCBjb250cmFzdF9mYWQyM19mbmwyMykiLCJmaXRfZmFkMjNfZm5sMjNfMiA8LSBlQmF5ZXMoZml0X2ZhZDIzX2ZubDIzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDIzX2ZubDIzXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.AD.23 and F.Normal.23
+mVal_age_adj_fad23_fnl23 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.AD.23&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;F.Normal.23&quot;]
+
+# make design matrix
+design_fad23_fnl23 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fad23_fnl23$sex.ad.apoe_pqad))
+colnames(design_fad23_fnl23) &lt;- levels(factor(mVal_age_adj_fad23_fnl23$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fad23_fnl23 &lt;- makeContrasts(contrasts = &quot;F.AD.23-F.Normal.23&quot;, levels = design_fad23_fnl23)
+
+# de analyis
+fit_fad23_fnl23 &lt;- lmFit(mVal_age_adj_fad23_fnl23, design_fad23_fnl23)
+fit_fad23_fnl23_2 &lt;- contrasts.fit(fit_fad23_fnl23, contrast_fad23_fnl23)
+fit_fad23_fnl23_2 &lt;- eBayes(fit_fad23_fnl23_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fad23_fnl23_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuQUQuMjMtRi5Ob3JtYWwuMjNcbkRvd24gICAgICAgICAgICAgICAgICAgICAwXG5Ob3RTaWcgICAgICAgICAgICAgIDc3NjUwOFxuVXAgICAgICAgICAgICAgICAgICAgICAgIDBcbiJ9 -->
+<pre><code>       F.AD.23-F.Normal.23
+Down                     0
+NotSig              776508
+Up                       0</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBuZXcoXCJBbm5vdGF0ZWREYXRhRnJhbWVcIiwgZGF0YSA9IG1ldGFfcm5hc2VxKSIsIiIsIiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGoiLCJleHByc2V0X01WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikiXX0= -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_MVal_plate_pmi_race_age_sex_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for MVal_plate_pmi_race_age_sex_adj
-exprset_MVal_plate_pmi_race_age_sex_adj &lt;- ExpressionSet(assayData = MVal_plate_pmi_race_age_sex_adj, phenoData = phenoData_MVal_plate_pmi_race_age_sex_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZhZDIzX2ZubDIzIDwtIHRvcFRhYmxlKGZpdF9mYWQyM19mbmwyM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fad23_fnl23 &lt;- topTable(fit_fad23_fnl23_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>DE analysis for M.AD-M.NL</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogYXJlIHNhbWUiLCJpZGVudGljYWwoY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKSJdfQ== -->
-<pre class="r"><code># check if rownames and colnames of meta_rnaseq and MVal_plate_pmi_race_sex_adj are same
-identical(colnames(MVal_plate_pmi_race_sex_adj), rownames(meta_rnaseq))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IE0uQUQgYW5kIE0uTm9ybWFsIiwibVZhbF9hZ2VfYWRqX21hZF9tbmwgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWRfcHFhZCA9PSBcIk0uQURcIiB8IG1WYWxfYWdlX2FkaiRzZXguYWRfcHFhZCA9PSBcIk0uTm9ybWFsXCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fbWFkX21ubCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9tYWRfbW5sJHNleC5hZF9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fbWFkX21ubCkgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfbWFkX21ubCRzZXguYWRfcHFhZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X21hZF9tbmwgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSBcIk0uQUQtTS5Ob3JtYWxcIiwgbGV2ZWxzID0gZGVzaWduX21hZF9tbmwpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X21hZF9tbmwgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX21hZF9tbmwsIGRlc2lnbl9tYWRfbW5sKSIsImZpdF9tYWRfbW5sXzIgPC0gY29udHJhc3RzLmZpdChmaXRfbWFkX21ubCwgY29udHJhc3RfbWFkX21ubCkiLCJmaXRfbWFkX21ubF8yIDwtIGVCYXllcyhmaXRfbWFkX21ubF8yKSIsIiIsIiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUiLCJzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9tYWRfbW5sXzIpKSJdfQ== -->
+<pre class="r"><code># subset M.AD and M.Normal
+mVal_age_adj_mad_mnl &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad_pqad == &quot;M.AD&quot; | mVal_age_adj$sex.ad_pqad == &quot;M.Normal&quot;]
+
+# make design matrix
+design_mad_mnl &lt;- model.matrix(~ 0 + factor(mVal_age_adj_mad_mnl$sex.ad_pqad))
+colnames(design_mad_mnl) &lt;- levels(factor(mVal_age_adj_mad_mnl$sex.ad_pqad))
+
+# make contrast matrix
+contrast_mad_mnl &lt;- makeContrasts(contrasts = &quot;M.AD-M.Normal&quot;, levels = design_mad_mnl)
+
+# de analyis
+fit_mad_mnl &lt;- lmFit(mVal_age_adj_mad_mnl, design_mad_mnl)
+fit_mad_mnl_2 &lt;- contrasts.fit(fit_mad_mnl, contrast_mad_mnl)
+fit_mad_mnl_2 &lt;- eBayes(fit_mad_mnl_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_mad_mnl_2))</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIE0uQUQtTS5Ob3JtYWxcbkRvd24gICAgICAgICAgICAgICAwXG5Ob3RTaWcgICAgICAgIDc3NjUwOFxuVXAgICAgICAgICAgICAgICAgIDBcbiJ9 -->
+<pre><code>       M.AD-M.Normal
+Down               0
+NotSig        776508
+Up                 0</code></pre>
 <!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjpbIiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQiLCJwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIG5ldyhcIkFubm90YXRlZERhdGFGcmFtZVwiLCBkYXRhID0gbWV0YV9ybmFzZXEpIiwiIiwiIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIiwiZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9NVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopIl19 -->
-<pre class="r"><code># create meta info for the expressionset
-phenoData_MVal_plate_pmi_race_sex_adj &lt;- new(&quot;AnnotatedDataFrame&quot;, data = meta_rnaseq)
-
-# construct an expressionset for MVal_plate_pmi_race_sex_adj
-exprset_MVal_plate_pmi_race_sex_adj &lt;- ExpressionSet(assayData = MVal_plate_pmi_race_sex_adj, phenoData = phenoData_MVal_plate_pmi_race_sex_adj)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX21hZF9tbmwgPC0gdG9wVGFibGUoZml0X21hZF9tbmxfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKSJdfQ== -->
+<pre class="r"><code># save de results
+res_mad_mnl &lt;- topTable(fit_mad_mnl_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<p>Writing expressionsets</p>
+<p>DE analysis for M.AD.34-M.Normal.34</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbInNhdmVSRFMoZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiwgZmlsZSA9IFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vQmV0YVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnJkc1wiKSIsIiIsInNhdmVSRFMoZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqdXN0ZWQucmRzXCIpIiwiIiwic2F2ZVJEUyhleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkanVzdGVkLnJkc1wiKSIsIiIsInNhdmVSRFMoZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqdXN0ZWQucmRzXCIpIl19 -->
-<pre class="r"><code>saveRDS(exprset_betaVal_plate_pmi_race_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_plate_pmi_race_adjusted.rds&quot;)
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IE0uQUQuMzQgYW5kIE0uTm9ybWFsLjM0IiwibVZhbF9hZ2VfYWRqX21hZDM0X21ubDM0IDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSBcIk0uQUQuMzRcIiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiTS5Ob3JtYWwuMzRcIl0iLCIiLCIjIG1ha2UgZGVzaWduIG1hdHJpeCIsImRlc2lnbl9tYWQzNF9tbmwzNCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9tYWQzNF9tbmwzNCRzZXguYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fbWFkMzRfbW5sMzQpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX21hZDM0X21ubDM0JHNleC5hZC5hcG9lX3BxYWQpKSIsIiIsIiMgbWFrZSBjb250cmFzdCBtYXRyaXgiLCJjb250cmFzdF9tYWQzNF9tbmwzNCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiTS5BRC4zNC1NLk5vcm1hbC4zNFwiLCBsZXZlbHMgPSBkZXNpZ25fbWFkMzRfbW5sMzQpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X21hZDM0X21ubDM0IDwtIGxtRml0KG1WYWxfYWdlX2Fkal9tYWQzNF9tbmwzNCwgZGVzaWduX21hZDM0X21ubDM0KSIsImZpdF9tYWQzNF9tbmwzNF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X21hZDM0X21ubDM0LCBjb250cmFzdF9tYWQzNF9tbmwzNCkiLCJmaXRfbWFkMzRfbW5sMzRfMiA8LSBlQmF5ZXMoZml0X21hZDM0X21ubDM0XzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X21hZDM0X21ubDM0XzIpKSJdfQ== -->
+<pre class="r"><code># subset M.AD.34 and M.Normal.34
+mVal_age_adj_mad34_mnl34 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;M.AD.34&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.Normal.34&quot;]
 
-saveRDS(exprset_betaVal_plate_pmi_race_age_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_plate_pmi_race_age_adjusted.rds&quot;)
+# make design matrix
+design_mad34_mnl34 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_mad34_mnl34$sex.ad.apoe_pqad))
+colnames(design_mad34_mnl34) &lt;- levels(factor(mVal_age_adj_mad34_mnl34$sex.ad.apoe_pqad))
 
-saveRDS(exprset_betaVal_plate_pmi_race_age_sex_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_plate_pmi_race_age_sex_adjusted.rds&quot;)
+# make contrast matrix
+contrast_mad34_mnl34 &lt;- makeContrasts(contrasts = &quot;M.AD.34-M.Normal.34&quot;, levels = design_mad34_mnl34)
 
-saveRDS(exprset_betaVal_plate_pmi_race_sex_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/BetaVals_expressionset/exprset_Beta_Values_qced_normlized_plate_pmi_race_sex_adjusted.rds&quot;)</code></pre>
+# de analyis
+fit_mad34_mnl34 &lt;- lmFit(mVal_age_adj_mad34_mnl34, design_mad34_mnl34)
+fit_mad34_mnl34_2 &lt;- contrasts.fit(fit_mad34_mnl34, contrast_mad34_mnl34)
+fit_mad34_mnl34_2 &lt;- eBayes(fit_mad34_mnl34_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_mad34_mnl34_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIE0uQUQuMzQtTS5Ob3JtYWwuMzRcbkRvd24gICAgICAgICAgICAgICAgICAgMTIyXG5Ob3RTaWcgICAgICAgICAgICAgIDc3NjEyMVxuVXAgICAgICAgICAgICAgICAgICAgICAyNjVcbiJ9 -->
+<pre><code>       M.AD.34-M.Normal.34
+Down                   122
+NotSig              776121
+Up                     265</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX21hZDM0X21ubDM0IDwtIHRvcFRhYmxlKGZpdF9tYWQzNF9tbmwzNF8yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_mad34_mnl34 &lt;- topTable(fit_mad34_mnl34_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>DE analysis for M.AD.33-M.Normal.33</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IE0uQUQuMzMgYW5kIE0uTm9ybWFsLjMzIiwibVZhbF9hZ2VfYWRqX21hZDMzX21ubDMzIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSBcIk0uQUQuMzNcIiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiTS5Ob3JtYWwuMzNcIl0iLCIiLCIjIG1ha2UgZGVzaWduIG1hdHJpeCIsImRlc2lnbl9tYWQzM19tbmwzMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9tYWQzM19tbmwzMyRzZXguYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fbWFkMzNfbW5sMzMpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX21hZDMzX21ubDMzJHNleC5hZC5hcG9lX3BxYWQpKSIsIiIsIiMgbWFrZSBjb250cmFzdCBtYXRyaXgiLCJjb250cmFzdF9tYWQzM19tbmwzMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiTS5BRC4zMy1NLk5vcm1hbC4zM1wiLCBsZXZlbHMgPSBkZXNpZ25fbWFkMzNfbW5sMzMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X21hZDMzX21ubDMzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9tYWQzM19tbmwzMywgZGVzaWduX21hZDMzX21ubDMzKSIsImZpdF9tYWQzM19tbmwzM18yIDwtIGNvbnRyYXN0cy5maXQoZml0X21hZDMzX21ubDMzLCBjb250cmFzdF9tYWQzM19tbmwzMykiLCJmaXRfbWFkMzNfbW5sMzNfMiA8LSBlQmF5ZXMoZml0X21hZDMzX21ubDMzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X21hZDMzX21ubDMzXzIpKSJdfQ== -->
+<pre class="r"><code># subset M.AD.33 and M.Normal.33
+mVal_age_adj_mad33_mnl33 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;M.AD.33&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.Normal.33&quot;]
+
+# make design matrix
+design_mad33_mnl33 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_mad33_mnl33$sex.ad.apoe_pqad))
+colnames(design_mad33_mnl33) &lt;- levels(factor(mVal_age_adj_mad33_mnl33$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_mad33_mnl33 &lt;- makeContrasts(contrasts = &quot;M.AD.33-M.Normal.33&quot;, levels = design_mad33_mnl33)
+
+# de analyis
+fit_mad33_mnl33 &lt;- lmFit(mVal_age_adj_mad33_mnl33, design_mad33_mnl33)
+fit_mad33_mnl33_2 &lt;- contrasts.fit(fit_mad33_mnl33, contrast_mad33_mnl33)
+fit_mad33_mnl33_2 &lt;- eBayes(fit_mad33_mnl33_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_mad33_mnl33_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIE0uQUQuMzMtTS5Ob3JtYWwuMzNcbkRvd24gICAgICAgICAgICAgICAgICAgICAwXG5Ob3RTaWcgICAgICAgICAgICAgIDc3NjUwOFxuVXAgICAgICAgICAgICAgICAgICAgICAgIDBcbiJ9 -->
+<pre><code>       M.AD.33-M.Normal.33
+Down                     0
+NotSig              776508
+Up                       0</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX21hZDMzX21ubDMzIDwtIHRvcFRhYmxlKGZpdF9tYWQzM19tbmwzM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_mad33_mnl33 &lt;- topTable(fit_mad33_mnl33_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>DE analysis for M.AD.23-M.Normal.23</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IE0uQUQuMjMgYW5kIE0uTm9ybWFsLjIzIiwibVZhbF9hZ2VfYWRqX21hZDIzX21ubDIzIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSBcIk0uQUQuMjNcIiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiTS5Ob3JtYWwuMjNcIl0iLCIiLCIjIG1ha2UgZGVzaWduIG1hdHJpeCIsImRlc2lnbl9tYWQyM19tbmwyMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9tYWQyM19tbmwyMyRzZXguYWQuYXBvZV9wcWFkKSkiLCJjb2xuYW1lcyhkZXNpZ25fbWFkMjNfbW5sMjMpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX21hZDIzX21ubDIzJHNleC5hZC5hcG9lX3BxYWQpKSIsIiIsIiMgbWFrZSBjb250cmFzdCBtYXRyaXgiLCJjb250cmFzdF9tYWQyM19tbmwyMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiTS5BRC4yMy1NLk5vcm1hbC4yM1wiLCBsZXZlbHMgPSBkZXNpZ25fbWFkMjNfbW5sMjMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X21hZDIzX21ubDIzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9tYWQyM19tbmwyMywgZGVzaWduX21hZDIzX21ubDIzKSIsImZpdF9tYWQyM19tbmwyM18yIDwtIGNvbnRyYXN0cy5maXQoZml0X21hZDIzX21ubDIzLCBjb250cmFzdF9tYWQyM19tbmwyMykiLCJmaXRfbWFkMjNfbW5sMjNfMiA8LSBlQmF5ZXMoZml0X21hZDIzX21ubDIzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X21hZDIzX21ubDIzXzIpKSJdfQ== -->
+<pre class="r"><code># subset M.AD.23 and M.Normal.23
+mVal_age_adj_mad23_mnl23 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;M.AD.23&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.Normal.23&quot;]
+
+# make design matrix
+design_mad23_mnl23 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_mad23_mnl23$sex.ad.apoe_pqad))
+colnames(design_mad23_mnl23) &lt;- levels(factor(mVal_age_adj_mad23_mnl23$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_mad23_mnl23 &lt;- makeContrasts(contrasts = &quot;M.AD.23-M.Normal.23&quot;, levels = design_mad23_mnl23)
+
+# de analyis
+fit_mad23_mnl23 &lt;- lmFit(mVal_age_adj_mad23_mnl23, design_mad23_mnl23)
+fit_mad23_mnl23_2 &lt;- contrasts.fit(fit_mad23_mnl23, contrast_mad23_mnl23)
+fit_mad23_mnl23_2 &lt;- eBayes(fit_mad23_mnl23_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_mad23_mnl23_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIE0uQUQuMjMtTS5Ob3JtYWwuMjNcbkRvd24gICAgICAgICAgICAgICAgICAgICAwXG5Ob3RTaWcgICAgICAgICAgICAgIDc3NjUwOFxuVXAgICAgICAgICAgICAgICAgICAgICAgIDBcbiJ9 -->
+<pre><code>       M.AD.23-M.Normal.23
+Down                     0
+NotSig              776508
+Up                       0</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX21hZDIzX21ubDIzIDwtIHRvcFRhYmxlKGZpdF9tYWQyM19tbmwyM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_mad23_mnl23 &lt;- topTable(fit_mad23_mnl23_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+</div>
+<div id="between-female-and-male" class="section level2">
+<h2>Between Female and Male</h2>
+<p>DE analysis for F.AD-M.AD</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuQUQgYW5kIE0uQUQiLCJtVmFsX2FnZV9hZGpfZmFkX21hZCA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZF9wcWFkID09IFwiRi5BRFwiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZF9wcWFkID09IFwiTS5BRFwiXSIsIiIsIiMgbWFrZSBkZXNpZ24gbWF0cml4IiwiZGVzaWduX2ZhZF9tYWQgPC0gbW9kZWwubWF0cml4KH4gMCArIGZhY3RvcihtVmFsX2FnZV9hZGpfZmFkX21hZCRzZXguYWRfcHFhZCkpIiwiY29sbmFtZXMoZGVzaWduX2ZhZF9tYWQpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX2ZhZF9tYWQkc2V4LmFkX3BxYWQpKSIsIiIsIiMgbWFrZSBjb250cmFzdCBtYXRyaXgiLCJjb250cmFzdF9mYWRfbWFkIDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gXCJGLkFELU0uQURcIiwgbGV2ZWxzID0gZGVzaWduX2ZhZF9tYWQpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZhZF9tYWQgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX2ZhZF9tYWQsIGRlc2lnbl9mYWRfbWFkKSIsImZpdF9mYWRfbWFkXzIgPC0gY29udHJhc3RzLmZpdChmaXRfZmFkX21hZCwgY29udHJhc3RfZmFkX21hZCkiLCJmaXRfZmFkX21hZF8yIDwtIGVCYXllcyhmaXRfZmFkX21hZF8yKSIsIiIsIiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUiLCJzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9mYWRfbWFkXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.AD and M.AD
+mVal_age_adj_fad_mad &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad_pqad == &quot;F.AD&quot; | mVal_age_adj$sex.ad_pqad == &quot;M.AD&quot;]
+
+# make design matrix
+design_fad_mad &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fad_mad$sex.ad_pqad))
+colnames(design_fad_mad) &lt;- levels(factor(mVal_age_adj_fad_mad$sex.ad_pqad))
+
+# make contrast matrix
+contrast_fad_mad &lt;- makeContrasts(contrasts = &quot;F.AD-M.AD&quot;, levels = design_fad_mad)
+
+# de analyis
+fit_fad_mad &lt;- lmFit(mVal_age_adj_fad_mad, design_fad_mad)
+fit_fad_mad_2 &lt;- contrasts.fit(fit_fad_mad, contrast_fad_mad)
+fit_fad_mad_2 &lt;- eBayes(fit_fad_mad_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fad_mad_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuQUQtTS5BRFxuRG93biAgICAgICAgNjY3NFxuTm90U2lnICAgIDc2MjA0MVxuVXAgICAgICAgICAgNzc5M1xuIn0= -->
+<pre><code>       F.AD-M.AD
+Down        6674
+NotSig    762041
+Up          7793</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZhZF9tYWQgPC0gdG9wVGFibGUoZml0X2ZhZF9tYWRfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKSJdfQ== -->
+<pre class="r"><code># save de results
+res_fad_mad &lt;- topTable(fit_fad_mad_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjpbInNhdmVSRFMoZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiwgZmlsZSA9IFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnJkc1wiKSIsIiIsInNhdmVSRFMoZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqdXN0ZWQucmRzXCIpIiwiIiwic2F2ZVJEUyhleHByc2V0X01WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkanVzdGVkLnJkc1wiKSIsIiIsInNhdmVSRFMoZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGosIGZpbGUgPSBcIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqdXN0ZWQucmRzXCIpIl19 -->
-<pre class="r"><code>saveRDS(exprset_MVal_plate_pmi_race_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_plate_pmi_race_adjusted.rds&quot;)
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuTm9ybWFsIGFuZCBNLk5vcm1hbCIsIm1WYWxfYWdlX2Fkal9mbmxfbW5sIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkX3BxYWQgPT0gXCJGLk5vcm1hbFwiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZF9wcWFkID09IFwiTS5Ob3JtYWxcIl0iLCIiLCIjIG1ha2UgZGVzaWduIG1hdHJpeCIsImRlc2lnbl9mbmxfbW5sIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX2ZubF9tbmwkc2V4LmFkX3BxYWQpKSIsImNvbG5hbWVzKGRlc2lnbl9mbmxfbW5sKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mbmxfbW5sJHNleC5hZF9wcWFkKSkiLCIiLCIjIG1ha2UgY29udHJhc3QgbWF0cml4IiwiY29udHJhc3RfZm5sX21ubCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9IFwiRi5Ob3JtYWwtTS5Ob3JtYWxcIiwgbGV2ZWxzID0gZGVzaWduX2ZubF9tbmwpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZubF9tbmwgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX2ZubF9tbmwsIGRlc2lnbl9mbmxfbW5sKSIsImZpdF9mbmxfbW5sXzIgPC0gY29udHJhc3RzLmZpdChmaXRfZm5sX21ubCwgY29udHJhc3RfZm5sX21ubCkiLCJmaXRfZm5sX21ubF8yIDwtIGVCYXllcyhmaXRfZm5sX21ubF8yKSIsIiIsIiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUiLCJzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9mbmxfbW5sXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.Normal and M.Normal
+mVal_age_adj_fnl_mnl &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad_pqad == &quot;F.Normal&quot; | mVal_age_adj$sex.ad_pqad == &quot;M.Normal&quot;]
 
-saveRDS(exprset_MVal_plate_pmi_race_age_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_plate_pmi_race_age_adjusted.rds&quot;)
+# make design matrix
+design_fnl_mnl &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fnl_mnl$sex.ad_pqad))
+colnames(design_fnl_mnl) &lt;- levels(factor(mVal_age_adj_fnl_mnl$sex.ad_pqad))
 
-saveRDS(exprset_MVal_plate_pmi_race_age_sex_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_plate_pmi_race_age_sex_adjusted.rds&quot;)
+# make contrast matrix
+contrast_fnl_mnl &lt;- makeContrasts(contrasts = &quot;F.Normal-M.Normal&quot;, levels = design_fnl_mnl)
 
-saveRDS(exprset_MVal_plate_pmi_race_sex_adj, file = &quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/processed_data/qc_normlized_covariates_adjusted_Beta_M/MVals_expressionset/exprset_M_Values_qced_normlized_plate_pmi_race_sex_adjusted.rds&quot;)</code></pre>
+# de analyis
+fit_fnl_mnl &lt;- lmFit(mVal_age_adj_fnl_mnl, design_fnl_mnl)
+fit_fnl_mnl_2 &lt;- contrasts.fit(fit_fnl_mnl, contrast_fnl_mnl)
+fit_fnl_mnl_2 &lt;- eBayes(fit_fnl_mnl_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fnl_mnl_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuTm9ybWFsLU0uTm9ybWFsXG5Eb3duICAgICAgICAgICAgICAgIDcxMTdcbk5vdFNpZyAgICAgICAgICAgIDc2MTM5NFxuVXAgICAgICAgICAgICAgICAgICA3OTk3XG4ifQ== -->
+<pre><code>       F.Normal-M.Normal
+Down                7117
+NotSig            761394
+Up                  7997</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZubF9tbmwgPC0gdG9wVGFibGUoZml0X2ZubF9tbmxfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKSJdfQ== -->
+<pre class="r"><code># save de results
+res_fnl_mnl &lt;- topTable(fit_fnl_mnl_2, n = Inf, genelist = ann850kSub)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>DE analysis for F.AD.34-M.AD.34</p>
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuQUQuMzQgYW5kIE0uQUQuMzQiLCJtVmFsX2FnZV9hZGpfZmFkMzRfbWFkMzQgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiRi5BRC4zNFwiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJNLkFELjM0XCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fZmFkMzRfbWFkMzQgPC0gbW9kZWwubWF0cml4KH4gMCArIGZhY3RvcihtVmFsX2FnZV9hZGpfZmFkMzRfbWFkMzQkc2V4LmFkLmFwb2VfcHFhZCkpIiwiY29sbmFtZXMoZGVzaWduX2ZhZDM0X21hZDM0KSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQzNF9tYWQzNCRzZXguYWQuYXBvZV9wcWFkKSkiLCIiLCIjIG1ha2UgY29udHJhc3QgbWF0cml4IiwiY29udHJhc3RfZmFkMzRfbWFkMzQgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSBcIkYuQUQuMzQtTS5BRC4zNFwiLCBsZXZlbHMgPSBkZXNpZ25fZmFkMzRfbWFkMzQpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZhZDM0X21hZDM0IDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mYWQzNF9tYWQzNCwgZGVzaWduX2ZhZDM0X21hZDM0KSIsImZpdF9mYWQzNF9tYWQzNF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZhZDM0X21hZDM0LCBjb250cmFzdF9mYWQzNF9tYWQzNCkiLCJmaXRfZmFkMzRfbWFkMzRfMiA8LSBlQmF5ZXMoZml0X2ZhZDM0X21hZDM0XzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDM0X21hZDM0XzIpKSJdfQ== -->
+<pre class="r"><code># subset F.AD.34 and M.AD.34
+mVal_age_adj_fad34_mad34 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.AD.34&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.AD.34&quot;]
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQpSZW5kZXIgdGhlIG5vdGVib29rIHdpdGggY29tbWFuZGxpbmUgUnNjcmlwdCAtZSAicm1hcmtkb3duOjpyZW5kZXIoJ21ha2VfZXhwcmVzc2lvbnNldC5SbWQnKSINCg0KYGBge3IgbG9hZGluZyBwYWNrYWdlcywgbWVzc2FnZSA9IEZ9DQpsaWJyYXJ5KGRhdGEudGFibGUpDQpsaWJyYXJ5KHJlYWR4bCkNCmxpYnJhcnkoc3RyaW5ncikNCmxpYnJhcnkobGltbWEpDQpsaWJyYXJ5KEJpb2Jhc2UpDQpgYGANCg0KDQpSZWFkaW5nIGFkanVzdGVkIGJldGEgdmFsdWVzDQpgYGB7ciByZWFkaW5nIGJhdGNoIHBtaSByYWNlIGFkanVzdGVkIGJldGEgdmFsdWVzLCBtZXNzYWdlID0gRn0NCiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZGp1c3RlZCBiZXRhIHZhbHVlcw0KaW52aXNpYmxlKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIGZyZWFkKCIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9CZXRhVmFscy9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZGp1c3RlZC50c3YiLCBkYXRhLnRhYmxlID0gRikpDQoNCiMgbmFtaW5nIHRoZSByb3dzIHdpdGggdGhlIHByb2JlIGNvbHVtbg0Kcm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopIDwtIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqJFYxDQpiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkalssIC0xXQ0KDQojIGNvbnZlcnQgYmV0YVZhbF9zZXhfYWRqIHRvIG1hdHJpeA0KYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gYXMubWF0cml4KGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKQ0KYGBgDQoNCmBgYHtyIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2UgYWdlIGFkanVzdGVkIGJldGEgdmFsdWVzLCBtZXNzYWdlID0gRn0NCiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZ2UgYWRqdXN0ZWQgYmV0YSB2YWx1ZXMNCmludmlzaWJsZShiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzL0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGp1c3RlZC50c3YiLCBkYXRhLnRhYmxlID0gRikpDQoNCiMgbmFtaW5nIHRoZSByb3dzIHdpdGggdGhlIHByb2JlIGNvbHVtbg0Kcm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGokVjENCmJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGpbLCAtMV0NCg0KIyBjb252ZXJ0IGJldGFWYWxfc2V4X2FkaiB0byBtYXRyaXgNCmJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiA8LSBhcy5tYXRyaXgoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKQ0KYGBgDQoNCmBgYHtyIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2Ugc2V4IGFkanVzdGVkIGJldGEgdmFsdWVzLCBtZXNzYWdlID0gRn0NCiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWRqdXN0ZWQgYmV0YSB2YWx1ZXMNCmludmlzaWJsZShiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGogPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzL0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX3NleF9hZGp1c3RlZC50c3YiLCBkYXRhLnRhYmxlID0gRikpDQoNCiMgbmFtaW5nIHRoZSByb3dzIHdpdGggdGhlIHByb2JlIGNvbHVtbg0Kcm93bmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGokVjENCmJldGFWYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGpbLCAtMV0NCg0KIyBjb252ZXJ0IGJldGFWYWxfc2V4X2FkaiB0byBtYXRyaXgNCmJldGFWYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBhcy5tYXRyaXgoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKQ0KYGBgDQoNCmBgYHtyIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2Ugc2V4IGFnZSBhZGp1c3RlZCBiZXRhIHZhbHVlcywgbWVzc2FnZSA9IEZ9DQojIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2Ugc2V4IGFnZSBhZGp1c3RlZCBiZXRhIHZhbHVlcw0KaW52aXNpYmxlKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzL0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqdXN0ZWQudHN2IiwgZGF0YS50YWJsZSA9IEYpKQ0KDQojIG5hbWluZyB0aGUgcm93cyB3aXRoIHRoZSBwcm9iZSBjb2x1bW4NCnJvd25hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopIDwtIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGokVjENCmJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkalssIC0xXQ0KDQojIGNvbnZlcnQgYmV0YVZhbF9zZXhfYWRqIHRvIG1hdHJpeA0KYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBhcy5tYXRyaXgoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikNCmBgYA0KDQoNClJlYWRpbmcgYWRqdXN0ZWQgTSB2YWx1ZXMNCmBgYHtyIHJlYWRpbmcgYmF0Y2ggcG1pIHJhY2UgYWRqdXN0ZWQgTSB2YWx1ZXMsIG1lc3NhZ2UgPSBGfQ0KIyByZWFkaW5nIGJhdGNoIHBtaSByYWNlIGFkanVzdGVkIE0gdmFsdWVzDQppbnZpc2libGUoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzL01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnRzdiIsIGRhdGEudGFibGUgPSBGKSkNCg0KIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uDQpyb3duYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaikgPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGokVjENCk1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqWywgLTFdDQoNCiMgY29udmVydCBNVmFsX3NleF9hZGogdG8gbWF0cml4DQpNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBhcy5tYXRyaXgoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopDQpgYGANCg0KYGBge3IgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBhZ2UgYWRqdXN0ZWQgTSB2YWx1ZXMsIG1lc3NhZ2UgPSBGfQ0KIyByZWFkaW5nIGJhdGNoIHBtaSByYWNlIGFnZSBhZGp1c3RlZCBNIHZhbHVlcw0KaW52aXNpYmxlKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX2FkanVzdGVkLnRzdiIsIGRhdGEudGFibGUgPSBGKSkNCg0KIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uDQpyb3duYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiRWMQ0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkalssIC0xXQ0KDQojIGNvbnZlcnQgTVZhbF9zZXhfYWRqIHRvIG1hdHJpeA0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIGFzLm1hdHJpeChNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopDQpgYGANCg0KYGBge3IgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWRqdXN0ZWQgTSB2YWx1ZXMsIG1lc3NhZ2UgPSBGfQ0KIyByZWFkaW5nIGJhdGNoIHBtaSByYWNlIHNleCBhZGp1c3RlZCBNIHZhbHVlcw0KaW52aXNpYmxlKE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkanVzdGVkLnRzdiIsIGRhdGEudGFibGUgPSBGKSkNCg0KIyBuYW1pbmcgdGhlIHJvd3Mgd2l0aCB0aGUgcHJvYmUgY29sdW1uDQpyb3duYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiRWMQ0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkalssIC0xXQ0KDQojIGNvbnZlcnQgTVZhbF9zZXhfYWRqIHRvIG1hdHJpeA0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIGFzLm1hdHJpeChNVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopDQpgYGANCg0KYGBge3IgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWdlIGFkanVzdGVkIE0gdmFsdWVzLCBtZXNzYWdlID0gRn0NCiMgcmVhZGluZyBiYXRjaCBwbWkgcmFjZSBzZXggYWdlIGFkanVzdGVkIE0gdmFsdWVzDQppbnZpc2libGUoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHMvTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGp1c3RlZC50c3YiLCBkYXRhLnRhYmxlID0gRikpDQoNCiMgbmFtaW5nIHRoZSByb3dzIHdpdGggdGhlIHByb2JlIGNvbHVtbg0Kcm93bmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaikgPC0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiRWMQ0KTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqWywgLTFdDQoNCiMgY29udmVydCBNVmFsX3NleF9hZGogdG8gbWF0cml4DQpNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIDwtIGFzLm1hdHJpeChNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKQ0KYGBgDQoNCg0KUmVhZGluZyBNZXRhIGZpbGVzDQpgYGB7ciByZWFkaW5nIG1ldGEgaW5mb3JtYXRpb259DQojIHJlYWQgbWV0aHlsYXRpb24gbWV0YSBpbmZvDQptZXRhX21ldGggPC0gZnJlYWQoIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcmF3X2RhdGEvbWV0YV9tZXRoLmNzdiIpDQoNCiMgcmVhZCBSTkFzZXEgbWV0YSBpbmZvDQptZXRhX3JuYXNlcSA8LSBmcmVhZCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL3NoYXJlZC9tc2JiLXNlcS9EYXRhL21peGVkX21vZGVsX2NvcnJlY3Rpb25fdXBkYXRlZC9tc2JiLm1ldGEuQk1fMzYudHN2IikNCg0KI2VkaXQgQVBPRSBhbmQgZGlhZ25vc2lzIGZvcm1hdA0KbWV0YV9ybmFzZXEkQVBPRSA8LSBnc3ViKCIvIiwgIiIsIGdzdWIoImUiLCIiLCBtZXRhX3JuYXNlcSRBUE9FKSkNCm1ldGFfcm5hc2VxJEFQT0VbaXMubmEobWV0YV9ybmFzZXEkQVBPRSldIDwtICJVbmtub3duIg0KDQojYWRkIG5ldyBncm91cCBjb2x1bW5zDQptZXRhX3JuYXNlcVssIGMoInNleC5hZC5hcG9lX2NlcmFkIiwgImFkLmFwb2VfY2VyYWQiLCAic2V4LmFkX2NlcmFkIikgOj0gbGlzdChwYXN0ZShTRVhfaW5mZXJyZWQsIENFUkFELCBBUE9FLCBzZXAgPSAiLiIpLCBwYXN0ZShDRVJBRCwgQVBPRSwgc2VwID0gIi4iKSwgcGFzdGUoU0VYX2luZmVycmVkLCBDRVJBRCwgc2VwID0gIi4iKSldDQpgYGANCg0KTWFwcGluZyBJRHMgYmV0d2VlbiBtZXRhX21ldGggYW5kIG1ldGFfcm5hc2VxDQpgYGB7ciBtYXBwaW5nIElEcyBiZXR3ZWVuIG1ldGFfbWV0aCBhbmQgbWV0YV9ybmFzZXF9DQojcmVhZCBpZCBtYXAgZmlsZSBmb3IgbWV0aHlsYXRpb24gbWV0YSBmaWxlDQppZF9tYXBfZmlsZSA8LSByZWFkX3hsc3goIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcmF3X2RhdGEvTWV0aHlsYXRpb25CYXJjb2RlWFN1Yk51bVhNaW5naHVpWFdhbmcueGxzeCIsIHNraXAgPSAxMCkNCnNldERUKGlkX21hcF9maWxlKQ0KI3BhZCB0aGUgU3ViTnVtIHRvIDEwIGRpZ2l0cw0KaWRfbWFwX2ZpbGUkU3ViTnVtIDwtIHN0cl9wYWQoaWRfbWFwX2ZpbGUkU3ViTnVtLCAxMCwgImxlZnQiLCAwKQ0KDQppZF9tYXBfZmlsZSRTdWJOdW0gPC0gcGFzdGUwKCJBTVBBRF9NU1NNXyIsIGlkX21hcF9maWxlJFN1Yk51bSkNCg0KI21hdGNoIElEcyBmb3IgbWV0YV9tZXRoDQptZXRhX21ldGgkU3luYXBzZUlEIDwtIGlkX21hcF9maWxlJFN1Yk51bVttYXRjaChtZXRhX21ldGgkU2FtcGxlX05hbWUsIGlkX21hcF9maWxlJFNhbXBsZV9OYW1lX0JhcmNvZGUpXQ0KDQojSUQgbWFwcGluZyBiZXR3ZWVuIG1ldGFfcm5hc2VxICYgbWV0YV9tZXRoDQpJRF9vdmVybGFwIDwtIGludGVyc2VjdChtZXRhX21ldGgkU3luYXBzZUlELCBtZXRhX3JuYXNlcSRTeW5hcHNlSWQpDQoNCiNzdWJzZXQgbWV0YV9tZXRoIGJ5IElEX292ZXJsYXANCm1ldGFfbWV0aCA8LSBtZXRhX21ldGhbU3luYXBzZUlEICVpbiUgSURfb3ZlcmxhcF0NCg0KIyBhZGQgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX21ldGgNCm1ldGFfbWV0aCRTYW1wbGVJRCA8LSBwYXN0ZShtZXRhX21ldGgkU2VudHJpeF9JRCwgbWV0YV9tZXRoJFNlbnRyaXhfUG9zaXRpb24sIHNlcCA9ICJfIikNCg0KIyBzdWJzZXQgbWV0YV9ybmFzZXEgYnkgSURfb3ZlcmxhcA0KbWV0YV9ybmFzZXEgPC0gbWV0YV9ybmFzZXFbU3luYXBzZUlkICVpbiUgSURfb3ZlcmxhcF0NCg0KIyBhZGQgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX3JuYXNlcQ0KbWV0YV9ybmFzZXEkU2FtcGxlSUQgPC0gbWV0YV9tZXRoJFNhbXBsZUlEW21hdGNoKG1ldGFfcm5hc2VxJFN5bmFwc2VJZCwgbWV0YV9tZXRoJFN5bmFwc2VJRCldDQoNCiMgYWRkIGFub3RoZXIgc2FtcGxlIElEIGNvbHVtbiB0byBtZXRhX3JuYXNlcQ0KbWV0YV9ybmFzZXEkU2FtcGxlSURfMiA8LSBpZF9tYXBfZmlsZSRTYW1wbGVfSURbbWF0Y2gobWV0YV9ybmFzZXEkU3luYXBzZUlkLCBpZF9tYXBfZmlsZSRTdWJOdW0pXQ0KDQojIGFkZCBTYW1wbGUgYmF0Y2ggY29sdW1uIHRvIG1ldGFfcm5hc2VxDQptZXRhX3JuYXNlcSRTZW50cml4X0lEIDwtIG1ldGFfbWV0aCRTZW50cml4X0lEW21hdGNoKG1ldGFfcm5hc2VxJFN5bmFwc2VJZCwgbWV0YV9tZXRoJFN5bmFwc2VJRCldDQpgYGANCg0KDQpSZW1vdmluZyBzYW1wbGVzIHdpdGggYW1iaWd1b3VzIHNleCBhbmQgQUQgaW5mbw0KYGBge3J9DQptZXRhX3JuYXNlcSA8LSBtZXRhX3JuYXNlcVshU2FtcGxlSURfMiAlaW4lIGMoIlBRRFc1NDQiLCAiVFZVRjYyMCIsICJLQVNUNDE3IiwgIkRMVUg5MzYiLCAiRU9ZUzAxOSIpIF0NCmBgYA0KDQoNCk1hdGNoaW5nIHNhbXBsZSBvcmRlciBiZXR3ZWVuIG1ldGFfcm5hc2VxIGFuZCBiZXRhL20gbWF0cmljaWVzDQpgYGB7ciBtYXRjaGluZyBzYW1wbGUgb3JkZXIgYmV0d2VlbiBtZXRhX3JuYXNlcSBhbmQgYmV0YS9tIG1hdHJpY2llc30NCiMgY2hlY2sgaWYgY29sdW1uIG9yZGVyIGlzIHNhbWUgZm9yIGFsbCBiZXRhIG1hdHJpY2llcw0Kc2FwcGx5KGxpc3QoY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopLCBjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopLCBjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGopLCBjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2FkaiksIGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiksIGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopKSwgaWRlbnRpY2FsLCBjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKSkNCg0KIyBtYXRjaCBtZXRhX3JuYXNlcSBhbmQgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogc2FtcGxlIG9yZGVyDQptZXRhX3JuYXNlcSA8LSBtZXRhX3JuYXNlcVttYXRjaChjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIG1ldGFfcm5hc2VxJFNhbXBsZUlEKSwgXQ0Kc2V0REYobWV0YV9ybmFzZXEpDQpyb3duYW1lcyhtZXRhX3JuYXNlcSkgPC0gbWV0YV9ybmFzZXEkU2FtcGxlSUQNCmBgYA0KDQoNCk1ha2luZyBleHByZXNzaW9uc2V0IGZvciBiZXRhIHZhbHVlcw0KYGBge3IgYXNzZW1ibGluZyBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2Fkan0NCiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiBhcmUgc2FtZQ0KaWRlbnRpY2FsKGNvbG5hbWVzKGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKQ0KDQojIGNyZWF0ZSBtZXRhIGluZm8gZm9yIHRoZSBleHByZXNzaW9uc2V0DQpwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogPC0gbmV3KCJBbm5vdGF0ZWREYXRhRnJhbWUiLCBkYXRhID0gbWV0YV9ybmFzZXEpDQoNCiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqDQpleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIEV4cHJlc3Npb25TZXQoYXNzYXlEYXRhID0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FkaikNCmBgYA0KDQpgYGB7ciBhc3NlbWJsaW5nIGV4cHJlc3Npb25zZXQgZm9yIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2Fkan0NCiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogYXJlIHNhbWUNCmlkZW50aWNhbChjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopLCByb3duYW1lcyhtZXRhX3JuYXNlcSkpDQoNCiMgY3JlYXRlIG1ldGEgaW5mbyBmb3IgdGhlIGV4cHJlc3Npb25zZXQNCnBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gbmV3KCJBbm5vdGF0ZWREYXRhRnJhbWUiLCBkYXRhID0gbWV0YV9ybmFzZXEpDQoNCiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX2Fkag0KZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGogPC0gRXhwcmVzc2lvblNldChhc3NheURhdGEgPSBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGopDQpgYGANCg0KYGBge3IgYXNzZW1ibGluZyBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqfQ0KIyBjaGVjayBpZiByb3duYW1lcyBhbmQgY29sbmFtZXMgb2YgbWV0YV9ybmFzZXEgYW5kIGJldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogYXJlIHNhbWUNCmlkZW50aWNhbChjb2xuYW1lcyhiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKQ0KDQojIGNyZWF0ZSBtZXRhIGluZm8gZm9yIHRoZSBleHByZXNzaW9uc2V0DQpwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBuZXcoIkFubm90YXRlZERhdGFGcmFtZSIsIGRhdGEgPSBtZXRhX3JuYXNlcSkNCg0KIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2Fkag0KZXhwcnNldF9iZXRhVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIDwtIEV4cHJlc3Npb25TZXQoYXNzYXlEYXRhID0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiwgcGhlbm9EYXRhID0gcGhlbm9EYXRhX2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGopDQpgYGANCg0KYGBge3IgYXNzZW1ibGluZyBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGp9DQojIGNoZWNrIGlmIHJvd25hbWVzIGFuZCBjb2xuYW1lcyBvZiBtZXRhX3JuYXNlcSBhbmQgYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIGFyZSBzYW1lDQppZGVudGljYWwoY29sbmFtZXMoYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKQ0KDQojIGNyZWF0ZSBtZXRhIGluZm8gZm9yIHRoZSBleHByZXNzaW9uc2V0DQpwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIG5ldygiQW5ub3RhdGVkRGF0YUZyYW1lIiwgZGF0YSA9IG1ldGFfcm5hc2VxKQ0KDQojIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBiZXRhVmFsX3BsYXRlX3BtaV9yYWNlX3NleF9hZGoNCmV4cHJzZXRfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqIDwtIEV4cHJlc3Npb25TZXQoYXNzYXlEYXRhID0gYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqKQ0KYGBgDQoNCg0KDQpNYWtpbmcgZXhwcmVzc2lvbnNldCBmb3IgTSB2YWx1ZXMNCmBgYHtyIGFzc2VtYmxpbmcgZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGp9DQojIGNoZWNrIGlmIHJvd25hbWVzIGFuZCBjb2xuYW1lcyBvZiBtZXRhX3JuYXNlcSBhbmQgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGogYXJlIHNhbWUNCmlkZW50aWNhbChjb2xuYW1lcyhNVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkNCg0KIyBjcmVhdGUgbWV0YSBpbmZvIGZvciB0aGUgZXhwcmVzc2lvbnNldA0KcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2VfYWRqIDwtIG5ldygiQW5ub3RhdGVkRGF0YUZyYW1lIiwgZGF0YSA9IG1ldGFfcm5hc2VxKQ0KDQojIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBNVmFsX3BsYXRlX3BtaV9yYWNlX2Fkag0KZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FkaiA8LSBFeHByZXNzaW9uU2V0KGFzc2F5RGF0YSA9IE1WYWxfcGxhdGVfcG1pX3JhY2VfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGopDQpgYGANCg0KYGBge3IgYXNzZW1ibGluZyBleHByZXNzaW9uc2V0IGZvciBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGp9DQojIGNoZWNrIGlmIHJvd25hbWVzIGFuZCBjb2xuYW1lcyBvZiBtZXRhX3JuYXNlcSBhbmQgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIGFyZSBzYW1lDQppZGVudGljYWwoY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKSwgcm93bmFtZXMobWV0YV9ybmFzZXEpKQ0KDQojIGNyZWF0ZSBtZXRhIGluZm8gZm9yIHRoZSBleHByZXNzaW9uc2V0DQpwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIG5ldygiQW5ub3RhdGVkRGF0YUZyYW1lIiwgZGF0YSA9IG1ldGFfcm5hc2VxKQ0KDQojIGNvbnN0cnVjdCBhbiBleHByZXNzaW9uc2V0IGZvciBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGoNCmV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqIDwtIEV4cHJlc3Npb25TZXQoYXNzYXlEYXRhID0gTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqLCBwaGVub0RhdGEgPSBwaGVub0RhdGFfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqKQ0KYGBgDQoNCmBgYHtyIGFzc2VtYmxpbmcgZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2Fkan0NCiMgY2hlY2sgaWYgcm93bmFtZXMgYW5kIGNvbG5hbWVzIG9mIG1ldGFfcm5hc2VxIGFuZCBNVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqIGFyZSBzYW1lDQppZGVudGljYWwoY29sbmFtZXMoTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkNCg0KIyBjcmVhdGUgbWV0YSBpbmZvIGZvciB0aGUgZXhwcmVzc2lvbnNldA0KcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGogPC0gbmV3KCJBbm5vdGF0ZWREYXRhRnJhbWUiLCBkYXRhID0gbWV0YV9ybmFzZXEpDQoNCiMgY29uc3RydWN0IGFuIGV4cHJlc3Npb25zZXQgZm9yIE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGoNCmV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiA8LSBFeHByZXNzaW9uU2V0KGFzc2F5RGF0YSA9IE1WYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGosIHBoZW5vRGF0YSA9IHBoZW5vRGF0YV9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqKQ0KYGBgDQoNCmBgYHtyIGFzc2VtYmxpbmcgZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqfQ0KIyBjaGVjayBpZiByb3duYW1lcyBhbmQgY29sbmFtZXMgb2YgbWV0YV9ybmFzZXEgYW5kIE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiBhcmUgc2FtZQ0KaWRlbnRpY2FsKGNvbG5hbWVzKE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiksIHJvd25hbWVzKG1ldGFfcm5hc2VxKSkNCg0KIyBjcmVhdGUgbWV0YSBpbmZvIGZvciB0aGUgZXhwcmVzc2lvbnNldA0KcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBuZXcoIkFubm90YXRlZERhdGFGcmFtZSIsIGRhdGEgPSBtZXRhX3JuYXNlcSkNCg0KIyBjb25zdHJ1Y3QgYW4gZXhwcmVzc2lvbnNldCBmb3IgTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqDQpleHByc2V0X01WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiA8LSBFeHByZXNzaW9uU2V0KGFzc2F5RGF0YSA9IE1WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiwgcGhlbm9EYXRhID0gcGhlbm9EYXRhX01WYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaikNCmBgYA0KDQoNCldyaXRpbmcgZXhwcmVzc2lvbnNldHMNCmBgYHtyIHdyaXRpbmcgZXhwcmVzc2lvbnNldHMgZm9yIGJldGEgdmFsdWVzfQ0Kc2F2ZVJEUyhleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWRqLCBmaWxlID0gIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZGp1c3RlZC5yZHMiKQ0KDQpzYXZlUkRTKGV4cHJzZXRfYmV0YVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqLCBmaWxlID0gIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL0JldGFWYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9CZXRhX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9hZ2VfYWRqdXN0ZWQucmRzIikNCg0Kc2F2ZVJEUyhleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGosIGZpbGUgPSAiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vQmV0YVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X0JldGFfVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FnZV9zZXhfYWRqdXN0ZWQucmRzIikNCg0Kc2F2ZVJEUyhleHByc2V0X2JldGFWYWxfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkaiwgZmlsZSA9ICIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9CZXRhVmFsc19leHByZXNzaW9uc2V0L2V4cHJzZXRfQmV0YV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2Vfc2V4X2FkanVzdGVkLnJkcyIpDQpgYGANCg0KYGBge3Igd3JpdGluZyBleHByZXNzaW9uc2V0cyBmb3IgTSB2YWx1ZXN9DQpzYXZlUkRTKGV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZGosIGZpbGUgPSAiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FkanVzdGVkLnJkcyIpDQoNCnNhdmVSRFMoZXhwcnNldF9NVmFsX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGosIGZpbGUgPSAiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9xY19ub3JtbGl6ZWRfY292YXJpYXRlc19hZGp1c3RlZF9CZXRhX00vTVZhbHNfZXhwcmVzc2lvbnNldC9leHByc2V0X01fVmFsdWVzX3FjZWRfbm9ybWxpemVkX3BsYXRlX3BtaV9yYWNlX2FnZV9hZGp1c3RlZC5yZHMiKQ0KDQpzYXZlUkRTKGV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9hZ2Vfc2V4X2FkaiwgZmlsZSA9ICIvc2Mvb3JnYS9wcm9qZWN0cy96aGFuZ2IwM2EvbGVpX2d1by9CTTM2X21ldGh5bGF0aW9uX2FuYWx5c2lzL3Byb2Nlc3NlZF9kYXRhL3FjX25vcm1saXplZF9jb3ZhcmlhdGVzX2FkanVzdGVkX0JldGFfTS9NVmFsc19leHByZXNzaW9uc2V0L2V4cHJzZXRfTV9WYWx1ZXNfcWNlZF9ub3JtbGl6ZWRfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGp1c3RlZC5yZHMiKQ0KDQpzYXZlUkRTKGV4cHJzZXRfTVZhbF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqLCBmaWxlID0gIi9zYy9vcmdhL3Byb2plY3RzL3poYW5nYjAzYS9sZWlfZ3VvL0JNMzZfbWV0aHlsYXRpb25fYW5hbHlzaXMvcHJvY2Vzc2VkX2RhdGEvcWNfbm9ybWxpemVkX2NvdmFyaWF0ZXNfYWRqdXN0ZWRfQmV0YV9NL01WYWxzX2V4cHJlc3Npb25zZXQvZXhwcnNldF9NX1ZhbHVlc19xY2VkX25vcm1saXplZF9wbGF0ZV9wbWlfcmFjZV9zZXhfYWRqdXN0ZWQucmRzIikNCmBgYA0KDQo=</div>
+# make design matrix
+design_fad34_mad34 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fad34_mad34$sex.ad.apoe_pqad))
+colnames(design_fad34_mad34) &lt;- levels(factor(mVal_age_adj_fad34_mad34$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fad34_mad34 &lt;- makeContrasts(contrasts = &quot;F.AD.34-M.AD.34&quot;, levels = design_fad34_mad34)
+
+# de analyis
+fit_fad34_mad34 &lt;- lmFit(mVal_age_adj_fad34_mad34, design_fad34_mad34)
+fit_fad34_mad34_2 &lt;- contrasts.fit(fit_fad34_mad34, contrast_fad34_mad34)
+fit_fad34_mad34_2 &lt;- eBayes(fit_fad34_mad34_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fad34_mad34_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuQUQuMzQtTS5BRC4zNFxuRG93biAgICAgICAgICAgICAgNTAyN1xuTm90U2lnICAgICAgICAgIDc2NTQxMVxuVXAgICAgICAgICAgICAgICAgNjA3MFxuIn0= -->
+<pre><code>       F.AD.34-M.AD.34
+Down              5027
+NotSig          765411
+Up                6070</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZhZDM0X21hZDM0IDwtIHRvcFRhYmxlKGZpdF9mYWQzNF9tYWQzNF8yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fad34_mad34 &lt;- topTable(fit_fad34_mad34_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>DE analysis for F.Normal.34-M.Normal.34</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuTm9ybWFsLjM0IGFuZCBNLk5vcm1hbC4zNCIsIm1WYWxfYWdlX2Fkal9mbmwzNF9tbmwzNCA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJGLk5vcm1hbC4zNFwiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJNLk5vcm1hbC4zNFwiXSIsIiIsIiMgbWFrZSBkZXNpZ24gbWF0cml4IiwiZGVzaWduX2ZubDM0X21ubDM0IDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX2ZubDM0X21ubDM0JHNleC5hZC5hcG9lX3BxYWQpKSIsImNvbG5hbWVzKGRlc2lnbl9mbmwzNF9tbmwzNCkgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfZm5sMzRfbW5sMzQkc2V4LmFkLmFwb2VfcHFhZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X2ZubDM0X21ubDM0IDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gXCJGLk5vcm1hbC4zNC1NLk5vcm1hbC4zNFwiLCBsZXZlbHMgPSBkZXNpZ25fZm5sMzRfbW5sMzQpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZubDM0X21ubDM0IDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mbmwzNF9tbmwzNCwgZGVzaWduX2ZubDM0X21ubDM0KSIsImZpdF9mbmwzNF9tbmwzNF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZubDM0X21ubDM0LCBjb250cmFzdF9mbmwzNF9tbmwzNCkiLCJmaXRfZm5sMzRfbW5sMzRfMiA8LSBlQmF5ZXMoZml0X2ZubDM0X21ubDM0XzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZubDM0X21ubDM0XzIpKSJdfQ== -->
+<pre class="r"><code># subset F.Normal.34 and M.Normal.34
+mVal_age_adj_fnl34_mnl34 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.Normal.34&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.Normal.34&quot;]
+
+# make design matrix
+design_fnl34_mnl34 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fnl34_mnl34$sex.ad.apoe_pqad))
+colnames(design_fnl34_mnl34) &lt;- levels(factor(mVal_age_adj_fnl34_mnl34$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fnl34_mnl34 &lt;- makeContrasts(contrasts = &quot;F.Normal.34-M.Normal.34&quot;, levels = design_fnl34_mnl34)
+
+# de analyis
+fit_fnl34_mnl34 &lt;- lmFit(mVal_age_adj_fnl34_mnl34, design_fnl34_mnl34)
+fit_fnl34_mnl34_2 &lt;- contrasts.fit(fit_fnl34_mnl34, contrast_fnl34_mnl34)
+fit_fnl34_mnl34_2 &lt;- eBayes(fit_fnl34_mnl34_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fnl34_mnl34_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuTm9ybWFsLjM0LU0uTm9ybWFsLjM0XG5Eb3duICAgICAgICAgICAgICAgICAgICAgICA3MDRcbk5vdFNpZyAgICAgICAgICAgICAgICAgIDc3MjM1MVxuVXAgICAgICAgICAgICAgICAgICAgICAgICAzNDUzXG4ifQ== -->
+<pre><code>       F.Normal.34-M.Normal.34
+Down                       704
+NotSig                  772351
+Up                        3453</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZubDM0X21ubDM0IDwtIHRvcFRhYmxlKGZpdF9mbmwzNF9tbmwzNF8yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fnl34_mnl34 &lt;- topTable(fit_fnl34_mnl34_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>DE analysis for F.AD.33-M.AD.33</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuQUQuMzMgYW5kIE0uQUQuMzMiLCJtVmFsX2FnZV9hZGpfZmFkMzNfbWFkMzMgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiRi5BRC4zM1wiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJNLkFELjMzXCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fZmFkMzNfbWFkMzMgPC0gbW9kZWwubWF0cml4KH4gMCArIGZhY3RvcihtVmFsX2FnZV9hZGpfZmFkMzNfbWFkMzMkc2V4LmFkLmFwb2VfcHFhZCkpIiwiY29sbmFtZXMoZGVzaWduX2ZhZDMzX21hZDMzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQzM19tYWQzMyRzZXguYWQuYXBvZV9wcWFkKSkiLCIiLCIjIG1ha2UgY29udHJhc3QgbWF0cml4IiwiY29udHJhc3RfZmFkMzNfbWFkMzMgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSBcIkYuQUQuMzMtTS5BRC4zM1wiLCBsZXZlbHMgPSBkZXNpZ25fZmFkMzNfbWFkMzMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZhZDMzX21hZDMzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mYWQzM19tYWQzMywgZGVzaWduX2ZhZDMzX21hZDMzKSIsImZpdF9mYWQzM19tYWQzM18yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZhZDMzX21hZDMzLCBjb250cmFzdF9mYWQzM19tYWQzMykiLCJmaXRfZmFkMzNfbWFkMzNfMiA8LSBlQmF5ZXMoZml0X2ZhZDMzX21hZDMzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDMzX21hZDMzXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.AD.33 and M.AD.33
+mVal_age_adj_fad33_mad33 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.AD.33&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.AD.33&quot;]
+
+# make design matrix
+design_fad33_mad33 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fad33_mad33$sex.ad.apoe_pqad))
+colnames(design_fad33_mad33) &lt;- levels(factor(mVal_age_adj_fad33_mad33$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fad33_mad33 &lt;- makeContrasts(contrasts = &quot;F.AD.33-M.AD.33&quot;, levels = design_fad33_mad33)
+
+# de analyis
+fit_fad33_mad33 &lt;- lmFit(mVal_age_adj_fad33_mad33, design_fad33_mad33)
+fit_fad33_mad33_2 &lt;- contrasts.fit(fit_fad33_mad33, contrast_fad33_mad33)
+fit_fad33_mad33_2 &lt;- eBayes(fit_fad33_mad33_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fad33_mad33_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuQUQuMzMtTS5BRC4zM1xuRG93biAgICAgICAgICAgICAgNTI4MVxuTm90U2lnICAgICAgICAgIDc2NDk1MVxuVXAgICAgICAgICAgICAgICAgNjI3NlxuIn0= -->
+<pre><code>       F.AD.33-M.AD.33
+Down              5281
+NotSig          764951
+Up                6276</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZhZDMzX21hZDMzIDwtIHRvcFRhYmxlKGZpdF9mYWQzM19tYWQzM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fad33_mad33 &lt;- topTable(fit_fad33_mad33_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>DE analysis for F.Normal.33-M.Normal.33</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuTm9ybWFsLjMzIGFuZCBNLk5vcm1hbC4zMyIsIm1WYWxfYWdlX2Fkal9mbmwzM19tbmwzMyA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJGLk5vcm1hbC4zM1wiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJNLk5vcm1hbC4zM1wiXSIsIiIsIiMgbWFrZSBkZXNpZ24gbWF0cml4IiwiZGVzaWduX2ZubDMzX21ubDMzIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX2ZubDMzX21ubDMzJHNleC5hZC5hcG9lX3BxYWQpKSIsImNvbG5hbWVzKGRlc2lnbl9mbmwzM19tbmwzMykgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfZm5sMzNfbW5sMzMkc2V4LmFkLmFwb2VfcHFhZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X2ZubDMzX21ubDMzIDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gXCJGLk5vcm1hbC4zMy1NLk5vcm1hbC4zM1wiLCBsZXZlbHMgPSBkZXNpZ25fZm5sMzNfbW5sMzMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZubDMzX21ubDMzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mbmwzM19tbmwzMywgZGVzaWduX2ZubDMzX21ubDMzKSIsImZpdF9mbmwzM19tbmwzM18yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZubDMzX21ubDMzLCBjb250cmFzdF9mbmwzM19tbmwzMykiLCJmaXRfZm5sMzNfbW5sMzNfMiA8LSBlQmF5ZXMoZml0X2ZubDMzX21ubDMzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZubDMzX21ubDMzXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.Normal.33 and M.Normal.33
+mVal_age_adj_fnl33_mnl33 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.Normal.33&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.Normal.33&quot;]
+
+# make design matrix
+design_fnl33_mnl33 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fnl33_mnl33$sex.ad.apoe_pqad))
+colnames(design_fnl33_mnl33) &lt;- levels(factor(mVal_age_adj_fnl33_mnl33$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fnl33_mnl33 &lt;- makeContrasts(contrasts = &quot;F.Normal.33-M.Normal.33&quot;, levels = design_fnl33_mnl33)
+
+# de analyis
+fit_fnl33_mnl33 &lt;- lmFit(mVal_age_adj_fnl33_mnl33, design_fnl33_mnl33)
+fit_fnl33_mnl33_2 &lt;- contrasts.fit(fit_fnl33_mnl33, contrast_fnl33_mnl33)
+fit_fnl33_mnl33_2 &lt;- eBayes(fit_fnl33_mnl33_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fnl33_mnl33_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuTm9ybWFsLjMzLU0uTm9ybWFsLjMzXG5Eb3duICAgICAgICAgICAgICAgICAgICAgIDU2OTlcbk5vdFNpZyAgICAgICAgICAgICAgICAgIDc2NDA4MlxuVXAgICAgICAgICAgICAgICAgICAgICAgICA2NzI3XG4ifQ== -->
+<pre><code>       F.Normal.33-M.Normal.33
+Down                      5699
+NotSig                  764082
+Up                        6727</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZubDMzX21ubDMzIDwtIHRvcFRhYmxlKGZpdF9mbmwzM19tbmwzM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fnl33_mnl33 &lt;- topTable(fit_fnl33_mnl33_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>DE analysis for F.AD.23-M.AD.23</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuQUQuMjMgYW5kIE0uQUQuMjMiLCJtVmFsX2FnZV9hZGpfZmFkMjNfbWFkMjMgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09IFwiRi5BRC4yM1wiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJNLkFELjIzXCJdIiwiIiwiIyBtYWtlIGRlc2lnbiBtYXRyaXgiLCJkZXNpZ25fZmFkMjNfbWFkMjMgPC0gbW9kZWwubWF0cml4KH4gMCArIGZhY3RvcihtVmFsX2FnZV9hZGpfZmFkMjNfbWFkMjMkc2V4LmFkLmFwb2VfcHFhZCkpIiwiY29sbmFtZXMoZGVzaWduX2ZhZDIzX21hZDIzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQyM19tYWQyMyRzZXguYWQuYXBvZV9wcWFkKSkiLCIiLCIjIG1ha2UgY29udHJhc3QgbWF0cml4IiwiY29udHJhc3RfZmFkMjNfbWFkMjMgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSBcIkYuQUQuMjMtTS5BRC4yM1wiLCBsZXZlbHMgPSBkZXNpZ25fZmFkMjNfbWFkMjMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZhZDIzX21hZDIzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mYWQyM19tYWQyMywgZGVzaWduX2ZhZDIzX21hZDIzKSIsImZpdF9mYWQyM19tYWQyM18yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZhZDIzX21hZDIzLCBjb250cmFzdF9mYWQyM19tYWQyMykiLCJmaXRfZmFkMjNfbWFkMjNfMiA8LSBlQmF5ZXMoZml0X2ZhZDIzX21hZDIzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDIzX21hZDIzXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.AD.23 and M.AD.23
+mVal_age_adj_fad23_mad23 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.AD.23&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.AD.23&quot;]
+
+# make design matrix
+design_fad23_mad23 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fad23_mad23$sex.ad.apoe_pqad))
+colnames(design_fad23_mad23) &lt;- levels(factor(mVal_age_adj_fad23_mad23$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fad23_mad23 &lt;- makeContrasts(contrasts = &quot;F.AD.23-M.AD.23&quot;, levels = design_fad23_mad23)
+
+# de analyis
+fit_fad23_mad23 &lt;- lmFit(mVal_age_adj_fad23_mad23, design_fad23_mad23)
+fit_fad23_mad23_2 &lt;- contrasts.fit(fit_fad23_mad23, contrast_fad23_mad23)
+fit_fad23_mad23_2 &lt;- eBayes(fit_fad23_mad23_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fad23_mad23_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuQUQuMjMtTS5BRC4yM1xuRG93biAgICAgICAgICAgICAgMTg0NVxuTm90U2lnICAgICAgICAgIDc3MDUzMlxuVXAgICAgICAgICAgICAgICAgNDEzMVxuIn0= -->
+<pre><code>       F.AD.23-M.AD.23
+Down              1845
+NotSig          770532
+Up                4131</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZhZDIzX21hZDIzIDwtIHRvcFRhYmxlKGZpdF9mYWQyM19tYWQyM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fad23_mad23 &lt;- topTable(fit_fad23_mad23_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>DE analysis for F.Normal.23-M.Normal.23</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc3Vic2V0IEYuTm9ybWFsLjIzIGFuZCBNLk5vcm1hbC4yMyIsIm1WYWxfYWdlX2Fkal9mbmwyM19tbmwyMyA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJGLk5vcm1hbC4yM1wiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gXCJNLk5vcm1hbC4yM1wiXSIsIiIsIiMgbWFrZSBkZXNpZ24gbWF0cml4IiwiZGVzaWduX2ZubDIzX21ubDIzIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX2ZubDIzX21ubDIzJHNleC5hZC5hcG9lX3BxYWQpKSIsImNvbG5hbWVzKGRlc2lnbl9mbmwyM19tbmwyMykgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfZm5sMjNfbW5sMjMkc2V4LmFkLmFwb2VfcHFhZCkpIiwiIiwiIyBtYWtlIGNvbnRyYXN0IG1hdHJpeCIsImNvbnRyYXN0X2ZubDIzX21ubDIzIDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gXCJGLk5vcm1hbC4yMy1NLk5vcm1hbC4yM1wiLCBsZXZlbHMgPSBkZXNpZ25fZm5sMjNfbW5sMjMpIiwiIiwiIyBkZSBhbmFseWlzIiwiZml0X2ZubDIzX21ubDIzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mbmwyM19tbmwyMywgZGVzaWduX2ZubDIzX21ubDIzKSIsImZpdF9mbmwyM19tbmwyM18yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZubDIzX21ubDIzLCBjb250cmFzdF9mbmwyM19tbmwyMykiLCJmaXRfZm5sMjNfbW5sMjNfMiA8LSBlQmF5ZXMoZml0X2ZubDIzX21ubDIzXzIpIiwiIiwiIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNSIsInN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZubDIzX21ubDIzXzIpKSJdfQ== -->
+<pre class="r"><code># subset F.Normal.23 and M.Normal.23
+mVal_age_adj_fnl23_mnl23 &lt;- mVal_age_adj[ , mVal_age_adj$sex.ad.apoe_pqad == &quot;F.Normal.23&quot; | mVal_age_adj$sex.ad.apoe_pqad == &quot;M.Normal.23&quot;]
+
+# make design matrix
+design_fnl23_mnl23 &lt;- model.matrix(~ 0 + factor(mVal_age_adj_fnl23_mnl23$sex.ad.apoe_pqad))
+colnames(design_fnl23_mnl23) &lt;- levels(factor(mVal_age_adj_fnl23_mnl23$sex.ad.apoe_pqad))
+
+# make contrast matrix
+contrast_fnl23_mnl23 &lt;- makeContrasts(contrasts = &quot;F.Normal.23-M.Normal.23&quot;, levels = design_fnl23_mnl23)
+
+# de analyis
+fit_fnl23_mnl23 &lt;- lmFit(mVal_age_adj_fnl23_mnl23, design_fnl23_mnl23)
+fit_fnl23_mnl23_2 &lt;- contrasts.fit(fit_fnl23_mnl23, contrast_fnl23_mnl23)
+fit_fnl23_mnl23_2 &lt;- eBayes(fit_fnl23_mnl23_2)
+
+# look at the numbers of DM CpGs at FDR &lt; 0.05
+summary(decideTests(fit_fnl23_mnl23_2))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICAgIEYuTm9ybWFsLjIzLU0uTm9ybWFsLjIzXG5Eb3duICAgICAgICAgICAgICAgICAgICAgIDQxODNcbk5vdFNpZyAgICAgICAgICAgICAgICAgIDc2NjcxNlxuVXAgICAgICAgICAgICAgICAgICAgICAgICA1NjA5XG4ifQ== -->
+<pre><code>       F.Normal.23-M.Normal.23
+Down                      4183
+NotSig                  766716
+Up                        5609</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgc2F2ZSBkZSByZXN1bHRzIiwicmVzX2ZubDIzX21ubDIzIDwtIHRvcFRhYmxlKGZpdF9mbmwyM19tbmwyM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpIl19 -->
+<pre class="r"><code># save de results
+res_fnl23_mnl23 &lt;- topTable(fit_fnl23_mnl23_2, n = Inf, genelist = ann850kSub)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Writing the results</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiMgRE1QIHJlc3VsdHMiLCJyZXNfZG1wX2FsbCA8LSBsaXN0KHJlc19hZF9ubCwgcmVzX2FkMzRfbmwzNCwgcmVzX2FkMzNfbmwzMywgcmVzX2FkMjNfbmwyMywgcmVzX2ZhZF9mbmwsIHJlc19mYWQzNF9mbmwzNCwgcmVzX2ZhZDMzX2ZubDMzLCByZXNfZmFkMjNfZm5sMjMsIHJlc19tYWRfbW5sLCByZXNfbWFkMzRfbW5sMzQsIHJlc19tYWQzM19tbmwzMywgcmVzX21hZDIzX21ubDIzLCByZXNfZmFkX21hZCwgcmVzX2ZubF9tbmwsIHJlc19mYWQzNF9tYWQzNCwgcmVzX2ZubDM0X21ubDM0LCByZXNfZmFkMzNfbWFkMzMsIHJlc19mbmwzM19tbmwzMywgcmVzX2ZhZDIzX21hZDIzLCByZXNfZm5sMjNfbW5sMjMpIiwiIiwiIyBvdXRwdXQgbmFtZXMiLCJvdXRfbmFtZXMgPC0gcGFzdGUwKFwiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9ETVBfUmVzdWx0cy9ETVBfZXJtaW5nX2Fkai9cIiwgYyhcIkRNUF9hZF9ubC50c3ZcIiwgXCJETVBfYWQzNF9ubDM0LnRzdlwiLCBcIkRNUF9hZDMzX25sMzMudHN2XCIsIFwiRE1QX2FkMjNfbmwyMy50c3ZcIiwgXCJETVBfZmFkX2ZubC50c3ZcIiwgXCJETVBfZmFkMzRfZm5sMzQudHN2XCIsIFwiRE1QX2ZhZDMzX2ZubDMzLnRzdlwiLCBcIkRNUF9mYWQyM19mbmwyMy50c3ZcIiwgXCJETVBfbWFkX21ubC50c3ZcIiwgXCJETVBfbWFkMzRfbW5sMzQudHN2XCIsIFwiRE1QX21hZDMzX21ubDMzLnRzdlwiLCBcIkRNUF9tYWQyM19tbmwyMy50c3ZcIiwgXCJETVBfZmFkX21hZC50c3ZcIiwgXCJETVBfZm5sX21ubC50c3ZcIiwgXCJETVBfZmFkMzRfbWFkMzQudHN2XCIsIFwiRE1QX2ZubDM0X21ubDM0LnRzdlwiLCBcIkRNUF9mYWQzM19tYWQzMy50c3ZcIiwgXCJETVBfZm5sMzNfbW5sMzMudHN2XCIsIFwiRE1QX2ZhZDIzX21hZDIzLnRzdlwiLCBcIkRNUF9mbmwyM19tbmwyMy50c3ZcIikpIiwiIiwiIyB3cml0ZSB0aGUgcmVzdWx0cyIsImludmlzaWJsZShtYXBwbHkoZndyaXRlLCByZXNfZG1wX2FsbCwgb3V0X25hbWVzLCBNb3JlQXJncyA9IGxpc3Qocm93Lm5hbWVzID0gVCwgc2VwID0gXCJcXHRcIikpKSJdfQ== -->
+<pre class="r"><code># DMP results
+res_dmp_all &lt;- list(res_ad_nl, res_ad34_nl34, res_ad33_nl33, res_ad23_nl23, res_fad_fnl, res_fad34_fnl34, res_fad33_fnl33, res_fad23_fnl23, res_mad_mnl, res_mad34_mnl34, res_mad33_mnl33, res_mad23_mnl23, res_fad_mad, res_fnl_mnl, res_fad34_mad34, res_fnl34_mnl34, res_fad33_mad33, res_fnl33_mnl33, res_fad23_mad23, res_fnl23_mnl23)
+
+# output names
+out_names &lt;- paste0(&quot;/sc/orga/projects/zhangb03a/lei_guo/BM36_methylation_analysis/DMP_Results/DMP_erming_adj/&quot;, c(&quot;DMP_ad_nl.tsv&quot;, &quot;DMP_ad34_nl34.tsv&quot;, &quot;DMP_ad33_nl33.tsv&quot;, &quot;DMP_ad23_nl23.tsv&quot;, &quot;DMP_fad_fnl.tsv&quot;, &quot;DMP_fad34_fnl34.tsv&quot;, &quot;DMP_fad33_fnl33.tsv&quot;, &quot;DMP_fad23_fnl23.tsv&quot;, &quot;DMP_mad_mnl.tsv&quot;, &quot;DMP_mad34_mnl34.tsv&quot;, &quot;DMP_mad33_mnl33.tsv&quot;, &quot;DMP_mad23_mnl23.tsv&quot;, &quot;DMP_fad_mad.tsv&quot;, &quot;DMP_fnl_mnl.tsv&quot;, &quot;DMP_fad34_mad34.tsv&quot;, &quot;DMP_fnl34_mnl34.tsv&quot;, &quot;DMP_fad33_mad33.tsv&quot;, &quot;DMP_fnl33_mnl33.tsv&quot;, &quot;DMP_fad23_mad23.tsv&quot;, &quot;DMP_fnl23_mnl23.tsv&quot;))
+
+# write the results
+invisible(mapply(fwrite, res_dmp_all, out_names, MoreArgs = list(row.names = T, sep = &quot;\t&quot;)))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+</div>
+
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQpSc2NyaXB0IC1lICJybWFya2Rvd246OnJlbmRlcignRE1QX2FuYWx5c2lzX2VybWluZ19hZGouUm1kJykiDQoNCmBgYHtyIGxvYWRpbmcgcGFja2FnZXMsIG1lc3NhZ2UgPSBGQUxTRSwgd2FybmluZyA9IEZBTFNFfQ0KbGlicmFyeShJbGx1bWluYUh1bWFuTWV0aHlsYXRpb25FUElDYW5uby5pbG0xMGIyLmhnMTkpDQpsaWJyYXJ5KGxpbW1hKQ0KbGlicmFyeShkYXRhLnRhYmxlKQ0KbGlicmFyeShETVJjYXRlKQ0KYGBgDQoNClJlYWRpbmcgZXhwcmVzc2lvbnNldHMNCmBgYHtyIHJlYWRpbmcgdGhlIGV4cHJlc3Npb25zZXRzLCBtZXNzYWdlID0gRkFMU0V9DQojIHJlYWQgc2V4IGFkanVzdGVkIGV4cHJlc3Npb25zZXQNCm1WYWxfYWdlX3NleF9hZGogPC0gcmVhZFJEUygiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9jb3ZhcmlhdGVfYWRqdXN0ZWRfQmV0YV9NX0VybWluZy9iYXRjaF9zdWJEYXRlL2V4cHJzZXRfTV9WYWx1ZXNfUUNlZF9ub3JtbGl6ZWRfYmF0Y2hfcGxhdGVfcG1pX3JhY2VfYWdlX3NleF9hZGp1c3RlZC5yZHMiKQ0KDQojIHJlYWQgbm9uLXNleC1hZGp1c3RlZCBleHByZXNzaW9uc2V0DQptVmFsX2FnZV9hZGogPC0gcmVhZFJEUygiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9wcm9jZXNzZWRfZGF0YS9jb3ZhcmlhdGVfYWRqdXN0ZWRfQmV0YV9NX0VybWluZy9iYXRjaF9zdWJEYXRlL2V4cHJzZXRfTV9WYWx1ZXNfUUNlZF9ub3JtbGl6ZWRfYmF0Y2hfcGxhdGVfcG1pX3JhY2VfYWdlX2FkanVzdGVkLnJkcyIpDQpgYGANCg0KR2V0dGluZyB0aGUgYmVhZGFycmF5IGFubm90YXRpb24gZGF0YQ0KYGBge3IgZ2V0dGluZyB0aGUgYmVhZGFycmF5IGFubm90YXRpb24gZGF0YX0NCiMgZ2V0IHRoZSBiZWFkYXJyYXkgYW5ub3RhdGlvbiBkYXRhDQphbm5fZXBpYyA8LSBnZXRBbm5vdGF0aW9uKElsbHVtaW5hSHVtYW5NZXRoeWxhdGlvbkVQSUNhbm5vLmlsbTEwYjIuaGcxOSkNCg0KYW5uODUwa1N1YiA8LSBhbm5fZXBpY1ttYXRjaChyb3duYW1lcyhtVmFsX2FnZV9zZXhfYWRqKSwgYW5uX2VwaWMkTmFtZSksIGMoMTo0LDEyOjE5LDI0Om5jb2woYW5uX2VwaWMpKV0NCmBgYA0KDQpDaGVja2luZyBzYW1wbGUgbnVtYmVyIGluIGVhY2ggZ3JvdXANCmBgYHtyIGNoZWNraW5nIHNhbXBsZSBudW1iZXIgaW4gZWFjaCBncm91cH0NCiMgZm9yIEFELU5MIGdyb3Vwcw0KYXMuZGF0YS5mcmFtZSh0YWJsZShwRGF0YShtVmFsX2FnZV9zZXhfYWRqKSRwcV9hZCkpDQoNCiMgZm9yIGFkLmFwb2VfcHFhZCBncm91cHMNCmFzLmRhdGEuZnJhbWUodGFibGUocERhdGEobVZhbF9hZ2Vfc2V4X2FkaikkYWQuYXBvZV9wcWFkKSkNCg0KIyBmb3Igc2V4LmFkLmFwb2VfcHFhZCBncm91cHMNCmFzLmRhdGEuZnJhbWUodGFibGUocERhdGEobVZhbF9hZ2Vfc2V4X2Fkaikkc2V4LmFkLmFwb2VfcHFhZCkpDQpgYGANCg0KDQojIyBCZXR3ZWVuIEFEIGFuZCBOb3JtYWwNCg0KREUgYW5hbHlzaXMgZm9yIEFELU5MDQpgYGB7ciBERSBhbmFseXNpcyBmb3IgQUQtTkx9DQojIHN1YnNldCBBRCBhbmQgTm9ybWFsDQptVmFsX2FnZV9zZXhfYWRqX2FkX25sIDwtIG1WYWxfYWdlX3NleF9hZGpbICwgbVZhbF9hZ2Vfc2V4X2FkaiRwcV9hZCA9PSAiQUQiIHwgbVZhbF9hZ2Vfc2V4X2FkaiRwcV9hZCA9PSAiTm9ybWFsIl0NCg0KIyBtYWtlIGRlc2lnbiBtYXRyaXgNCmRlc2lnbl9hZF9ubCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWRfbmwkcHFfYWQpKQ0KY29sbmFtZXMoZGVzaWduX2FkX25sKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWRfbmwkcHFfYWQpKQ0KDQojIG1ha2UgY29udHJhc3QgbWF0cml4DQpjb250cmFzdF9hZF9ubCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJBRC1Ob3JtYWwiLCBsZXZlbHMgPSBkZXNpZ25fYWRfbmwpDQoNCiMgZGUgYW5hbHlpcw0KZml0X2FkX25sIDwtIGxtRml0KG1WYWxfYWdlX3NleF9hZGpfYWRfbmwsIGRlc2lnbl9hZF9ubCkNCmZpdF9hZF9ubF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X2FkX25sLCBjb250cmFzdF9hZF9ubCkNCmZpdF9hZF9ubF8yIDwtIGVCYXllcyhmaXRfYWRfbmxfMikNCg0KIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNQ0Kc3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfYWRfbmxfMikpDQoNCiMgc2F2ZSBkZSByZXN1bHRzDQpyZXNfYWRfbmwgPC0gdG9wVGFibGUoZml0X2FkX25sXzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikNCmBgYA0KDQpERSBhbmFseXNpcyBmb3IgQUQuMzQtTkwuMzQNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBBRC4zNC1OTC4zNH0NCiMgc3Vic2V0IEFELjM0IGFuZCBOb3JtYWwuMzQNCm1WYWxfYWdlX3NleF9hZGpfYWQzNF9ubDM0IDwtIG1WYWxfYWdlX3NleF9hZGpbICwgbVZhbF9hZ2Vfc2V4X2FkaiRhZC5hcG9lX3BxYWQgPT0gIkFELjM0IiB8IG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09ICJOb3JtYWwuMzQiXQ0KDQojIG1ha2UgZGVzaWduIG1hdHJpeA0KZGVzaWduX2FkMzRfbmwzNCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQzNF9ubDM0JGFkLmFwb2VfcHFhZCkpDQpjb2xuYW1lcyhkZXNpZ25fYWQzNF9ubDM0KSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQzNF9ubDM0JGFkLmFwb2VfcHFhZCkpDQoNCiMgbWFrZSBjb250cmFzdCBtYXRyaXgNCmNvbnRyYXN0X2FkMzRfbmwzNCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJBRC4zNC1Ob3JtYWwuMzQiLCBsZXZlbHMgPSBkZXNpZ25fYWQzNF9ubDM0KQ0KDQojIGRlIGFuYWx5aXMNCmZpdF9hZDM0X25sMzQgPC0gbG1GaXQobVZhbF9hZ2Vfc2V4X2Fkal9hZDM0X25sMzQsIGRlc2lnbl9hZDM0X25sMzQpDQpmaXRfYWQzNF9ubDM0XzIgPC0gY29udHJhc3RzLmZpdChmaXRfYWQzNF9ubDM0LCBjb250cmFzdF9hZDM0X25sMzQpDQpmaXRfYWQzNF9ubDM0XzIgPC0gZUJheWVzKGZpdF9hZDM0X25sMzRfMikNCg0KIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNQ0Kc3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfYWQzNF9ubDM0XzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX2FkMzRfbmwzNCA8LSB0b3BUYWJsZShmaXRfYWQzNF9ubDM0XzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikNCmBgYA0KDQpERSBhbmFseXNpcyBmb3IgQUQuMzMtTkwuMzMNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBBRC4zMy1OTC4zM30NCiMgc3Vic2V0IEFELjMzIGFuZCBOb3JtYWwuMzMNCm1WYWxfYWdlX3NleF9hZGpfYWQzM19ubDMzIDwtIG1WYWxfYWdlX3NleF9hZGpbICwgbVZhbF9hZ2Vfc2V4X2FkaiRhZC5hcG9lX3BxYWQgPT0gIkFELjMzIiB8IG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09ICJOb3JtYWwuMzMiXQ0KDQojIG1ha2UgZGVzaWduIG1hdHJpeA0KZGVzaWduX2FkMzNfbmwzMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQzM19ubDMzJGFkLmFwb2VfcHFhZCkpDQpjb2xuYW1lcyhkZXNpZ25fYWQzM19ubDMzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQzM19ubDMzJGFkLmFwb2VfcHFhZCkpDQoNCiMgbWFrZSBjb250cmFzdCBtYXRyaXgNCmNvbnRyYXN0X2FkMzNfbmwzMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJBRC4zMy1Ob3JtYWwuMzMiLCBsZXZlbHMgPSBkZXNpZ25fYWQzM19ubDMzKQ0KDQojIGRlIGFuYWx5aXMNCmZpdF9hZDMzX25sMzMgPC0gbG1GaXQobVZhbF9hZ2Vfc2V4X2Fkal9hZDMzX25sMzMsIGRlc2lnbl9hZDMzX25sMzMpDQpmaXRfYWQzM19ubDMzXzIgPC0gY29udHJhc3RzLmZpdChmaXRfYWQzM19ubDMzLCBjb250cmFzdF9hZDMzX25sMzMpDQpmaXRfYWQzM19ubDMzXzIgPC0gZUJheWVzKGZpdF9hZDMzX25sMzNfMikNCg0KIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNQ0Kc3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfYWQzM19ubDMzXzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX2FkMzNfbmwzMyA8LSB0b3BUYWJsZShmaXRfYWQzM19ubDMzXzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikNCmBgYA0KDQpERSBhbmFseXNpcyBmb3IgQUQuMjMtTkwuMjMNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBBRC4yMy1OTC4yM30NCiMgc3Vic2V0IEFELjIzIGFuZCBOb3JtYWwuMjMNCm1WYWxfYWdlX3NleF9hZGpfYWQyM19ubDIzIDwtIG1WYWxfYWdlX3NleF9hZGpbICwgbVZhbF9hZ2Vfc2V4X2FkaiRhZC5hcG9lX3BxYWQgPT0gIkFELjIzIiB8IG1WYWxfYWdlX3NleF9hZGokYWQuYXBvZV9wcWFkID09ICJOb3JtYWwuMjMiXQ0KDQojIG1ha2UgZGVzaWduIG1hdHJpeA0KZGVzaWduX2FkMjNfbmwyMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQyM19ubDIzJGFkLmFwb2VfcHFhZCkpDQpjb2xuYW1lcyhkZXNpZ25fYWQyM19ubDIzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX3NleF9hZGpfYWQyM19ubDIzJGFkLmFwb2VfcHFhZCkpDQoNCiMgbWFrZSBjb250cmFzdCBtYXRyaXgNCmNvbnRyYXN0X2FkMjNfbmwyMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJBRC4yMy1Ob3JtYWwuMjMiLCBsZXZlbHMgPSBkZXNpZ25fYWQyM19ubDIzKQ0KDQojIGRlIGFuYWx5aXMNCmZpdF9hZDIzX25sMjMgPC0gbG1GaXQobVZhbF9hZ2Vfc2V4X2Fkal9hZDIzX25sMjMsIGRlc2lnbl9hZDIzX25sMjMpDQpmaXRfYWQyM19ubDIzXzIgPC0gY29udHJhc3RzLmZpdChmaXRfYWQyM19ubDIzLCBjb250cmFzdF9hZDIzX25sMjMpDQpmaXRfYWQyM19ubDIzXzIgPC0gZUJheWVzKGZpdF9hZDIzX25sMjNfMikNCg0KIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNQ0Kc3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfYWQyM19ubDIzXzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX2FkMjNfbmwyMyA8LSB0b3BUYWJsZShmaXRfYWQyM19ubDIzXzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikNCmBgYA0KDQpERSBhbmFseXNpcyBmb3IgRi5BRC1GLk5MDQpgYGB7ciBERSBhbmFseXNpcyBmb3IgRi5BRC1GLk5MfQ0KIyBzdWJzZXQgRi5BRCBhbmQgRi5Ob3JtYWwNCm1WYWxfYWdlX2Fkal9mYWRfZm5sIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkX3BxYWQgPT0gIkYuQUQiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZF9wcWFkID09ICJGLk5vcm1hbCJdDQoNCiMgbWFrZSBkZXNpZ24gbWF0cml4DQpkZXNpZ25fZmFkX2ZubCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWRfZm5sJHNleC5hZF9wcWFkKSkNCmNvbG5hbWVzKGRlc2lnbl9mYWRfZm5sKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWRfZm5sJHNleC5hZF9wcWFkKSkNCg0KIyBtYWtlIGNvbnRyYXN0IG1hdHJpeA0KY29udHJhc3RfZmFkX2ZubCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJGLkFELUYuTm9ybWFsIiwgbGV2ZWxzID0gZGVzaWduX2ZhZF9mbmwpDQoNCiMgZGUgYW5hbHlpcw0KZml0X2ZhZF9mbmwgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX2ZhZF9mbmwsIGRlc2lnbl9mYWRfZm5sKQ0KZml0X2ZhZF9mbmxfMiA8LSBjb250cmFzdHMuZml0KGZpdF9mYWRfZm5sLCBjb250cmFzdF9mYWRfZm5sKQ0KZml0X2ZhZF9mbmxfMiA8LSBlQmF5ZXMoZml0X2ZhZF9mbmxfMikNCg0KIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNQ0Kc3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfZmFkX2ZubF8yKSkNCg0KIyBzYXZlIGRlIHJlc3VsdHMNCnJlc19mYWRfZm5sIDwtIHRvcFRhYmxlKGZpdF9mYWRfZm5sXzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikNCmBgYA0KDQpERSBhbmFseXNpcyBmb3IgRi5BRC4zNC1GLk5vcm1hbC4zNA0KYGBge3IgREUgYW5hbHlzaXMgZm9yIEYuQUQuMzQtRi5Ob3JtYWwuMzR9DQojIHN1YnNldCBGLkFELjM0IGFuZCBGLk5vcm1hbC4zNA0KbVZhbF9hZ2VfYWRqX2ZhZDM0X2ZubDM0IDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiRi5BRC4zNCIgfCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiRi5Ob3JtYWwuMzQiXQ0KDQojIG1ha2UgZGVzaWduIG1hdHJpeA0KZGVzaWduX2ZhZDM0X2ZubDM0IDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX2ZhZDM0X2ZubDM0JHNleC5hZC5hcG9lX3BxYWQpKQ0KY29sbmFtZXMoZGVzaWduX2ZhZDM0X2ZubDM0KSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQzNF9mbmwzNCRzZXguYWQuYXBvZV9wcWFkKSkNCg0KIyBtYWtlIGNvbnRyYXN0IG1hdHJpeA0KY29udHJhc3RfZmFkMzRfZm5sMzQgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSAiRi5BRC4zNC1GLk5vcm1hbC4zNCIsIGxldmVscyA9IGRlc2lnbl9mYWQzNF9mbmwzNCkNCg0KIyBkZSBhbmFseWlzDQpmaXRfZmFkMzRfZm5sMzQgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX2ZhZDM0X2ZubDM0LCBkZXNpZ25fZmFkMzRfZm5sMzQpDQpmaXRfZmFkMzRfZm5sMzRfMiA8LSBjb250cmFzdHMuZml0KGZpdF9mYWQzNF9mbmwzNCwgY29udHJhc3RfZmFkMzRfZm5sMzQpDQpmaXRfZmFkMzRfZm5sMzRfMiA8LSBlQmF5ZXMoZml0X2ZhZDM0X2ZubDM0XzIpDQoNCiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUNCnN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDM0X2ZubDM0XzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX2ZhZDM0X2ZubDM0IDwtIHRvcFRhYmxlKGZpdF9mYWQzNF9mbmwzNF8yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpDQpgYGANCg0KYGBge3IgREUgYW5hbHlzaXMgZm9yIEYuQUQuMzMtRi5Ob3JtYWwuMzN9DQojIHN1YnNldCBGLkFELjMzIGFuZCBGLk5vcm1hbC4zMw0KbVZhbF9hZ2VfYWRqX2ZhZDMzX2ZubDMzIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiRi5BRC4zMyIgfCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiRi5Ob3JtYWwuMzMiXQ0KDQojIG1ha2UgZGVzaWduIG1hdHJpeA0KZGVzaWduX2ZhZDMzX2ZubDMzIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX2ZhZDMzX2ZubDMzJHNleC5hZC5hcG9lX3BxYWQpKQ0KY29sbmFtZXMoZGVzaWduX2ZhZDMzX2ZubDMzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQzM19mbmwzMyRzZXguYWQuYXBvZV9wcWFkKSkNCg0KIyBtYWtlIGNvbnRyYXN0IG1hdHJpeA0KY29udHJhc3RfZmFkMzNfZm5sMzMgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSAiRi5BRC4zMy1GLk5vcm1hbC4zMyIsIGxldmVscyA9IGRlc2lnbl9mYWQzM19mbmwzMykNCg0KIyBkZSBhbmFseWlzDQpmaXRfZmFkMzNfZm5sMzMgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX2ZhZDMzX2ZubDMzLCBkZXNpZ25fZmFkMzNfZm5sMzMpDQpmaXRfZmFkMzNfZm5sMzNfMiA8LSBjb250cmFzdHMuZml0KGZpdF9mYWQzM19mbmwzMywgY29udHJhc3RfZmFkMzNfZm5sMzMpDQpmaXRfZmFkMzNfZm5sMzNfMiA8LSBlQmF5ZXMoZml0X2ZhZDMzX2ZubDMzXzIpDQoNCiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUNCnN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDMzX2ZubDMzXzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX2ZhZDMzX2ZubDMzIDwtIHRvcFRhYmxlKGZpdF9mYWQzM19mbmwzM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpDQpgYGANCg0KREUgYW5hbHlzaXMgZm9yIEYuQUQuMjMtRi5Ob3JtYWwuMjMNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBGLkFELjIzLUYuTm9ybWFsLjIzfQ0KIyBzdWJzZXQgRi5BRC4yMyBhbmQgRi5Ob3JtYWwuMjMNCm1WYWxfYWdlX2Fkal9mYWQyM19mbmwyMyA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gIkYuQUQuMjMiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gIkYuTm9ybWFsLjIzIl0NCg0KIyBtYWtlIGRlc2lnbiBtYXRyaXgNCmRlc2lnbl9mYWQyM19mbmwyMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQyM19mbmwyMyRzZXguYWQuYXBvZV9wcWFkKSkNCmNvbG5hbWVzKGRlc2lnbl9mYWQyM19mbmwyMykgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfZmFkMjNfZm5sMjMkc2V4LmFkLmFwb2VfcHFhZCkpDQoNCiMgbWFrZSBjb250cmFzdCBtYXRyaXgNCmNvbnRyYXN0X2ZhZDIzX2ZubDIzIDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gIkYuQUQuMjMtRi5Ob3JtYWwuMjMiLCBsZXZlbHMgPSBkZXNpZ25fZmFkMjNfZm5sMjMpDQoNCiMgZGUgYW5hbHlpcw0KZml0X2ZhZDIzX2ZubDIzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mYWQyM19mbmwyMywgZGVzaWduX2ZhZDIzX2ZubDIzKQ0KZml0X2ZhZDIzX2ZubDIzXzIgPC0gY29udHJhc3RzLmZpdChmaXRfZmFkMjNfZm5sMjMsIGNvbnRyYXN0X2ZhZDIzX2ZubDIzKQ0KZml0X2ZhZDIzX2ZubDIzXzIgPC0gZUJheWVzKGZpdF9mYWQyM19mbmwyM18yKQ0KDQojIGxvb2sgYXQgdGhlIG51bWJlcnMgb2YgRE0gQ3BHcyBhdCBGRFIgPCAwLjA1DQpzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9mYWQyM19mbmwyM18yKSkNCg0KIyBzYXZlIGRlIHJlc3VsdHMNCnJlc19mYWQyM19mbmwyMyA8LSB0b3BUYWJsZShmaXRfZmFkMjNfZm5sMjNfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKQ0KYGBgDQoNCkRFIGFuYWx5c2lzIGZvciBNLkFELU0uTkwNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBNLkFELU0uTkx9DQojIHN1YnNldCBNLkFEIGFuZCBNLk5vcm1hbA0KbVZhbF9hZ2VfYWRqX21hZF9tbmwgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWRfcHFhZCA9PSAiTS5BRCIgfCBtVmFsX2FnZV9hZGokc2V4LmFkX3BxYWQgPT0gIk0uTm9ybWFsIl0NCg0KIyBtYWtlIGRlc2lnbiBtYXRyaXgNCmRlc2lnbl9tYWRfbW5sIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX21hZF9tbmwkc2V4LmFkX3BxYWQpKQ0KY29sbmFtZXMoZGVzaWduX21hZF9tbmwpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX21hZF9tbmwkc2V4LmFkX3BxYWQpKQ0KDQojIG1ha2UgY29udHJhc3QgbWF0cml4DQpjb250cmFzdF9tYWRfbW5sIDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gIk0uQUQtTS5Ob3JtYWwiLCBsZXZlbHMgPSBkZXNpZ25fbWFkX21ubCkNCg0KIyBkZSBhbmFseWlzDQpmaXRfbWFkX21ubCA8LSBsbUZpdChtVmFsX2FnZV9hZGpfbWFkX21ubCwgZGVzaWduX21hZF9tbmwpDQpmaXRfbWFkX21ubF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X21hZF9tbmwsIGNvbnRyYXN0X21hZF9tbmwpDQpmaXRfbWFkX21ubF8yIDwtIGVCYXllcyhmaXRfbWFkX21ubF8yKQ0KDQojIGxvb2sgYXQgdGhlIG51bWJlcnMgb2YgRE0gQ3BHcyBhdCBGRFIgPCAwLjA1DQpzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9tYWRfbW5sXzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX21hZF9tbmwgPC0gdG9wVGFibGUoZml0X21hZF9tbmxfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKQ0KYGBgDQoNCkRFIGFuYWx5c2lzIGZvciBNLkFELjM0LU0uTm9ybWFsLjM0DQpgYGB7ciBERSBhbmFseXNpcyBmb3IgTS5BRC4zNC1NLk5vcm1hbC4zNH0NCiMgc3Vic2V0IE0uQUQuMzQgYW5kIE0uTm9ybWFsLjM0DQptVmFsX2FnZV9hZGpfbWFkMzRfbW5sMzQgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09ICJNLkFELjM0IiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09ICJNLk5vcm1hbC4zNCJdDQoNCiMgbWFrZSBkZXNpZ24gbWF0cml4DQpkZXNpZ25fbWFkMzRfbW5sMzQgPC0gbW9kZWwubWF0cml4KH4gMCArIGZhY3RvcihtVmFsX2FnZV9hZGpfbWFkMzRfbW5sMzQkc2V4LmFkLmFwb2VfcHFhZCkpDQpjb2xuYW1lcyhkZXNpZ25fbWFkMzRfbW5sMzQpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX21hZDM0X21ubDM0JHNleC5hZC5hcG9lX3BxYWQpKQ0KDQojIG1ha2UgY29udHJhc3QgbWF0cml4DQpjb250cmFzdF9tYWQzNF9tbmwzNCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJNLkFELjM0LU0uTm9ybWFsLjM0IiwgbGV2ZWxzID0gZGVzaWduX21hZDM0X21ubDM0KQ0KDQojIGRlIGFuYWx5aXMNCmZpdF9tYWQzNF9tbmwzNCA8LSBsbUZpdChtVmFsX2FnZV9hZGpfbWFkMzRfbW5sMzQsIGRlc2lnbl9tYWQzNF9tbmwzNCkNCmZpdF9tYWQzNF9tbmwzNF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X21hZDM0X21ubDM0LCBjb250cmFzdF9tYWQzNF9tbmwzNCkNCmZpdF9tYWQzNF9tbmwzNF8yIDwtIGVCYXllcyhmaXRfbWFkMzRfbW5sMzRfMikNCg0KIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNQ0Kc3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfbWFkMzRfbW5sMzRfMikpDQoNCiMgc2F2ZSBkZSByZXN1bHRzDQpyZXNfbWFkMzRfbW5sMzQgPC0gdG9wVGFibGUoZml0X21hZDM0X21ubDM0XzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikNCmBgYA0KDQpERSBhbmFseXNpcyBmb3IgTS5BRC4zMy1NLk5vcm1hbC4zMw0KYGBge3IgREUgYW5hbHlzaXMgZm9yIE0uQUQuMzMtTS5Ob3JtYWwuMzN9DQojIHN1YnNldCBNLkFELjMzIGFuZCBNLk5vcm1hbC4zMw0KbVZhbF9hZ2VfYWRqX21hZDMzX21ubDMzIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiTS5BRC4zMyIgfCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiTS5Ob3JtYWwuMzMiXQ0KDQojIG1ha2UgZGVzaWduIG1hdHJpeA0KZGVzaWduX21hZDMzX21ubDMzIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX21hZDMzX21ubDMzJHNleC5hZC5hcG9lX3BxYWQpKQ0KY29sbmFtZXMoZGVzaWduX21hZDMzX21ubDMzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9tYWQzM19tbmwzMyRzZXguYWQuYXBvZV9wcWFkKSkNCg0KIyBtYWtlIGNvbnRyYXN0IG1hdHJpeA0KY29udHJhc3RfbWFkMzNfbW5sMzMgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSAiTS5BRC4zMy1NLk5vcm1hbC4zMyIsIGxldmVscyA9IGRlc2lnbl9tYWQzM19tbmwzMykNCg0KIyBkZSBhbmFseWlzDQpmaXRfbWFkMzNfbW5sMzMgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX21hZDMzX21ubDMzLCBkZXNpZ25fbWFkMzNfbW5sMzMpDQpmaXRfbWFkMzNfbW5sMzNfMiA8LSBjb250cmFzdHMuZml0KGZpdF9tYWQzM19tbmwzMywgY29udHJhc3RfbWFkMzNfbW5sMzMpDQpmaXRfbWFkMzNfbW5sMzNfMiA8LSBlQmF5ZXMoZml0X21hZDMzX21ubDMzXzIpDQoNCiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUNCnN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X21hZDMzX21ubDMzXzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX21hZDMzX21ubDMzIDwtIHRvcFRhYmxlKGZpdF9tYWQzM19tbmwzM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpDQpgYGANCg0KREUgYW5hbHlzaXMgZm9yIE0uQUQuMjMtTS5Ob3JtYWwuMjMNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBNLkFELjIzLU0uTm9ybWFsLjIzfQ0KIyBzdWJzZXQgTS5BRC4yMyBhbmQgTS5Ob3JtYWwuMjMNCm1WYWxfYWdlX2Fkal9tYWQyM19tbmwyMyA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gIk0uQUQuMjMiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gIk0uTm9ybWFsLjIzIl0NCg0KIyBtYWtlIGRlc2lnbiBtYXRyaXgNCmRlc2lnbl9tYWQyM19tbmwyMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9tYWQyM19tbmwyMyRzZXguYWQuYXBvZV9wcWFkKSkNCmNvbG5hbWVzKGRlc2lnbl9tYWQyM19tbmwyMykgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfbWFkMjNfbW5sMjMkc2V4LmFkLmFwb2VfcHFhZCkpDQoNCiMgbWFrZSBjb250cmFzdCBtYXRyaXgNCmNvbnRyYXN0X21hZDIzX21ubDIzIDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gIk0uQUQuMjMtTS5Ob3JtYWwuMjMiLCBsZXZlbHMgPSBkZXNpZ25fbWFkMjNfbW5sMjMpDQoNCiMgZGUgYW5hbHlpcw0KZml0X21hZDIzX21ubDIzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9tYWQyM19tbmwyMywgZGVzaWduX21hZDIzX21ubDIzKQ0KZml0X21hZDIzX21ubDIzXzIgPC0gY29udHJhc3RzLmZpdChmaXRfbWFkMjNfbW5sMjMsIGNvbnRyYXN0X21hZDIzX21ubDIzKQ0KZml0X21hZDIzX21ubDIzXzIgPC0gZUJheWVzKGZpdF9tYWQyM19tbmwyM18yKQ0KDQojIGxvb2sgYXQgdGhlIG51bWJlcnMgb2YgRE0gQ3BHcyBhdCBGRFIgPCAwLjA1DQpzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9tYWQyM19tbmwyM18yKSkNCg0KIyBzYXZlIGRlIHJlc3VsdHMNCnJlc19tYWQyM19tbmwyMyA8LSB0b3BUYWJsZShmaXRfbWFkMjNfbW5sMjNfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKQ0KYGBgDQoNCiMjIEJldHdlZW4gRmVtYWxlIGFuZCBNYWxlDQoNCkRFIGFuYWx5c2lzIGZvciBGLkFELU0uQUQNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBGLkFELU0uQUR9DQojIHN1YnNldCBGLkFEIGFuZCBNLkFEDQptVmFsX2FnZV9hZGpfZmFkX21hZCA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZF9wcWFkID09ICJGLkFEIiB8IG1WYWxfYWdlX2FkaiRzZXguYWRfcHFhZCA9PSAiTS5BRCJdDQoNCiMgbWFrZSBkZXNpZ24gbWF0cml4DQpkZXNpZ25fZmFkX21hZCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWRfbWFkJHNleC5hZF9wcWFkKSkNCmNvbG5hbWVzKGRlc2lnbl9mYWRfbWFkKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWRfbWFkJHNleC5hZF9wcWFkKSkNCg0KIyBtYWtlIGNvbnRyYXN0IG1hdHJpeA0KY29udHJhc3RfZmFkX21hZCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJGLkFELU0uQUQiLCBsZXZlbHMgPSBkZXNpZ25fZmFkX21hZCkNCg0KIyBkZSBhbmFseWlzDQpmaXRfZmFkX21hZCA8LSBsbUZpdChtVmFsX2FnZV9hZGpfZmFkX21hZCwgZGVzaWduX2ZhZF9tYWQpDQpmaXRfZmFkX21hZF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZhZF9tYWQsIGNvbnRyYXN0X2ZhZF9tYWQpDQpmaXRfZmFkX21hZF8yIDwtIGVCYXllcyhmaXRfZmFkX21hZF8yKQ0KDQojIGxvb2sgYXQgdGhlIG51bWJlcnMgb2YgRE0gQ3BHcyBhdCBGRFIgPCAwLjA1DQpzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9mYWRfbWFkXzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX2ZhZF9tYWQgPC0gdG9wVGFibGUoZml0X2ZhZF9tYWRfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKQ0KYGBgDQoNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBGLk5vcm1hbC1NLk5vcm1hbH0NCiMgc3Vic2V0IEYuTm9ybWFsIGFuZCBNLk5vcm1hbA0KbVZhbF9hZ2VfYWRqX2ZubF9tbmwgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWRfcHFhZCA9PSAiRi5Ob3JtYWwiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZF9wcWFkID09ICJNLk5vcm1hbCJdDQoNCiMgbWFrZSBkZXNpZ24gbWF0cml4DQpkZXNpZ25fZm5sX21ubCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mbmxfbW5sJHNleC5hZF9wcWFkKSkNCmNvbG5hbWVzKGRlc2lnbl9mbmxfbW5sKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mbmxfbW5sJHNleC5hZF9wcWFkKSkNCg0KIyBtYWtlIGNvbnRyYXN0IG1hdHJpeA0KY29udHJhc3RfZm5sX21ubCA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJGLk5vcm1hbC1NLk5vcm1hbCIsIGxldmVscyA9IGRlc2lnbl9mbmxfbW5sKQ0KDQojIGRlIGFuYWx5aXMNCmZpdF9mbmxfbW5sIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mbmxfbW5sLCBkZXNpZ25fZm5sX21ubCkNCmZpdF9mbmxfbW5sXzIgPC0gY29udHJhc3RzLmZpdChmaXRfZm5sX21ubCwgY29udHJhc3RfZm5sX21ubCkNCmZpdF9mbmxfbW5sXzIgPC0gZUJheWVzKGZpdF9mbmxfbW5sXzIpDQoNCiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUNCnN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZubF9tbmxfMikpDQoNCiMgc2F2ZSBkZSByZXN1bHRzDQpyZXNfZm5sX21ubCA8LSB0b3BUYWJsZShmaXRfZm5sX21ubF8yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpDQpgYGANCg0KREUgYW5hbHlzaXMgZm9yIEYuQUQuMzQtTS5BRC4zNA0KYGBge3IgREUgYW5hbHlzaXMgZm9yIEYuQUQuMzQtTS5BRC4zNH0NCiMgc3Vic2V0IEYuQUQuMzQgYW5kIE0uQUQuMzQNCm1WYWxfYWdlX2Fkal9mYWQzNF9tYWQzNCA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gIkYuQUQuMzQiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gIk0uQUQuMzQiXQ0KDQojIG1ha2UgZGVzaWduIG1hdHJpeA0KZGVzaWduX2ZhZDM0X21hZDM0IDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX2ZhZDM0X21hZDM0JHNleC5hZC5hcG9lX3BxYWQpKQ0KY29sbmFtZXMoZGVzaWduX2ZhZDM0X21hZDM0KSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQzNF9tYWQzNCRzZXguYWQuYXBvZV9wcWFkKSkNCg0KIyBtYWtlIGNvbnRyYXN0IG1hdHJpeA0KY29udHJhc3RfZmFkMzRfbWFkMzQgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSAiRi5BRC4zNC1NLkFELjM0IiwgbGV2ZWxzID0gZGVzaWduX2ZhZDM0X21hZDM0KQ0KDQojIGRlIGFuYWx5aXMNCmZpdF9mYWQzNF9tYWQzNCA8LSBsbUZpdChtVmFsX2FnZV9hZGpfZmFkMzRfbWFkMzQsIGRlc2lnbl9mYWQzNF9tYWQzNCkNCmZpdF9mYWQzNF9tYWQzNF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZhZDM0X21hZDM0LCBjb250cmFzdF9mYWQzNF9tYWQzNCkNCmZpdF9mYWQzNF9tYWQzNF8yIDwtIGVCYXllcyhmaXRfZmFkMzRfbWFkMzRfMikNCg0KIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNQ0Kc3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfZmFkMzRfbWFkMzRfMikpDQoNCiMgc2F2ZSBkZSByZXN1bHRzDQpyZXNfZmFkMzRfbWFkMzQgPC0gdG9wVGFibGUoZml0X2ZhZDM0X21hZDM0XzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikNCmBgYA0KDQpERSBhbmFseXNpcyBmb3IgRi5Ob3JtYWwuMzQtTS5Ob3JtYWwuMzQNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBGLk5vcm1hbC4zNC1NLk5vcm1hbC4zNH0NCiMgc3Vic2V0IEYuTm9ybWFsLjM0IGFuZCBNLk5vcm1hbC4zNA0KbVZhbF9hZ2VfYWRqX2ZubDM0X21ubDM0IDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiRi5Ob3JtYWwuMzQiIHwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gIk0uTm9ybWFsLjM0Il0NCg0KIyBtYWtlIGRlc2lnbiBtYXRyaXgNCmRlc2lnbl9mbmwzNF9tbmwzNCA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mbmwzNF9tbmwzNCRzZXguYWQuYXBvZV9wcWFkKSkNCmNvbG5hbWVzKGRlc2lnbl9mbmwzNF9tbmwzNCkgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfZm5sMzRfbW5sMzQkc2V4LmFkLmFwb2VfcHFhZCkpDQoNCiMgbWFrZSBjb250cmFzdCBtYXRyaXgNCmNvbnRyYXN0X2ZubDM0X21ubDM0IDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gIkYuTm9ybWFsLjM0LU0uTm9ybWFsLjM0IiwgbGV2ZWxzID0gZGVzaWduX2ZubDM0X21ubDM0KQ0KDQojIGRlIGFuYWx5aXMNCmZpdF9mbmwzNF9tbmwzNCA8LSBsbUZpdChtVmFsX2FnZV9hZGpfZm5sMzRfbW5sMzQsIGRlc2lnbl9mbmwzNF9tbmwzNCkNCmZpdF9mbmwzNF9tbmwzNF8yIDwtIGNvbnRyYXN0cy5maXQoZml0X2ZubDM0X21ubDM0LCBjb250cmFzdF9mbmwzNF9tbmwzNCkNCmZpdF9mbmwzNF9tbmwzNF8yIDwtIGVCYXllcyhmaXRfZm5sMzRfbW5sMzRfMikNCg0KIyBsb29rIGF0IHRoZSBudW1iZXJzIG9mIERNIENwR3MgYXQgRkRSIDwgMC4wNQ0Kc3VtbWFyeShkZWNpZGVUZXN0cyhmaXRfZm5sMzRfbW5sMzRfMikpDQoNCiMgc2F2ZSBkZSByZXN1bHRzDQpyZXNfZm5sMzRfbW5sMzQgPC0gdG9wVGFibGUoZml0X2ZubDM0X21ubDM0XzIsIG4gPSBJbmYsIGdlbmVsaXN0ID0gYW5uODUwa1N1YikNCmBgYA0KDQpERSBhbmFseXNpcyBmb3IgRi5BRC4zMy1NLkFELjMzDQpgYGB7ciBERSBhbmFseXNpcyBmb3IgRi5BRC4zMy1NLkFELjMzfQ0KIyBzdWJzZXQgRi5BRC4zMyBhbmQgTS5BRC4zMw0KbVZhbF9hZ2VfYWRqX2ZhZDMzX21hZDMzIDwtIG1WYWxfYWdlX2FkalsgLCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiRi5BRC4zMyIgfCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiTS5BRC4zMyJdDQoNCiMgbWFrZSBkZXNpZ24gbWF0cml4DQpkZXNpZ25fZmFkMzNfbWFkMzMgPC0gbW9kZWwubWF0cml4KH4gMCArIGZhY3RvcihtVmFsX2FnZV9hZGpfZmFkMzNfbWFkMzMkc2V4LmFkLmFwb2VfcHFhZCkpDQpjb2xuYW1lcyhkZXNpZ25fZmFkMzNfbWFkMzMpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX2ZhZDMzX21hZDMzJHNleC5hZC5hcG9lX3BxYWQpKQ0KDQojIG1ha2UgY29udHJhc3QgbWF0cml4DQpjb250cmFzdF9mYWQzM19tYWQzMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJGLkFELjMzLU0uQUQuMzMiLCBsZXZlbHMgPSBkZXNpZ25fZmFkMzNfbWFkMzMpDQoNCiMgZGUgYW5hbHlpcw0KZml0X2ZhZDMzX21hZDMzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mYWQzM19tYWQzMywgZGVzaWduX2ZhZDMzX21hZDMzKQ0KZml0X2ZhZDMzX21hZDMzXzIgPC0gY29udHJhc3RzLmZpdChmaXRfZmFkMzNfbWFkMzMsIGNvbnRyYXN0X2ZhZDMzX21hZDMzKQ0KZml0X2ZhZDMzX21hZDMzXzIgPC0gZUJheWVzKGZpdF9mYWQzM19tYWQzM18yKQ0KDQojIGxvb2sgYXQgdGhlIG51bWJlcnMgb2YgRE0gQ3BHcyBhdCBGRFIgPCAwLjA1DQpzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9mYWQzM19tYWQzM18yKSkNCg0KIyBzYXZlIGRlIHJlc3VsdHMNCnJlc19mYWQzM19tYWQzMyA8LSB0b3BUYWJsZShmaXRfZmFkMzNfbWFkMzNfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKQ0KYGBgDQoNCkRFIGFuYWx5c2lzIGZvciBGLk5vcm1hbC4zMy1NLk5vcm1hbC4zMw0KYGBge3IgREUgYW5hbHlzaXMgZm9yIEYuTm9ybWFsLjMzLU0uTm9ybWFsLjMzfQ0KIyBzdWJzZXQgRi5Ob3JtYWwuMzMgYW5kIE0uTm9ybWFsLjMzDQptVmFsX2FnZV9hZGpfZm5sMzNfbW5sMzMgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09ICJGLk5vcm1hbC4zMyIgfCBtVmFsX2FnZV9hZGokc2V4LmFkLmFwb2VfcHFhZCA9PSAiTS5Ob3JtYWwuMzMiXQ0KDQojIG1ha2UgZGVzaWduIG1hdHJpeA0KZGVzaWduX2ZubDMzX21ubDMzIDwtIG1vZGVsLm1hdHJpeCh+IDAgKyBmYWN0b3IobVZhbF9hZ2VfYWRqX2ZubDMzX21ubDMzJHNleC5hZC5hcG9lX3BxYWQpKQ0KY29sbmFtZXMoZGVzaWduX2ZubDMzX21ubDMzKSA8LSBsZXZlbHMoZmFjdG9yKG1WYWxfYWdlX2Fkal9mbmwzM19tbmwzMyRzZXguYWQuYXBvZV9wcWFkKSkNCg0KIyBtYWtlIGNvbnRyYXN0IG1hdHJpeA0KY29udHJhc3RfZm5sMzNfbW5sMzMgPC0gbWFrZUNvbnRyYXN0cyhjb250cmFzdHMgPSAiRi5Ob3JtYWwuMzMtTS5Ob3JtYWwuMzMiLCBsZXZlbHMgPSBkZXNpZ25fZm5sMzNfbW5sMzMpDQoNCiMgZGUgYW5hbHlpcw0KZml0X2ZubDMzX21ubDMzIDwtIGxtRml0KG1WYWxfYWdlX2Fkal9mbmwzM19tbmwzMywgZGVzaWduX2ZubDMzX21ubDMzKQ0KZml0X2ZubDMzX21ubDMzXzIgPC0gY29udHJhc3RzLmZpdChmaXRfZm5sMzNfbW5sMzMsIGNvbnRyYXN0X2ZubDMzX21ubDMzKQ0KZml0X2ZubDMzX21ubDMzXzIgPC0gZUJheWVzKGZpdF9mbmwzM19tbmwzM18yKQ0KDQojIGxvb2sgYXQgdGhlIG51bWJlcnMgb2YgRE0gQ3BHcyBhdCBGRFIgPCAwLjA1DQpzdW1tYXJ5KGRlY2lkZVRlc3RzKGZpdF9mbmwzM19tbmwzM18yKSkNCg0KIyBzYXZlIGRlIHJlc3VsdHMNCnJlc19mbmwzM19tbmwzMyA8LSB0b3BUYWJsZShmaXRfZm5sMzNfbW5sMzNfMiwgbiA9IEluZiwgZ2VuZWxpc3QgPSBhbm44NTBrU3ViKQ0KYGBgDQoNCkRFIGFuYWx5c2lzIGZvciBGLkFELjIzLU0uQUQuMjMNCmBgYHtyIERFIGFuYWx5c2lzIGZvciBGLkFELjIzLU0uQUQuMjN9DQojIHN1YnNldCBGLkFELjIzIGFuZCBNLkFELjIzDQptVmFsX2FnZV9hZGpfZmFkMjNfbWFkMjMgPC0gbVZhbF9hZ2VfYWRqWyAsIG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09ICJGLkFELjIzIiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09ICJNLkFELjIzIl0NCg0KIyBtYWtlIGRlc2lnbiBtYXRyaXgNCmRlc2lnbl9mYWQyM19tYWQyMyA8LSBtb2RlbC5tYXRyaXgofiAwICsgZmFjdG9yKG1WYWxfYWdlX2Fkal9mYWQyM19tYWQyMyRzZXguYWQuYXBvZV9wcWFkKSkNCmNvbG5hbWVzKGRlc2lnbl9mYWQyM19tYWQyMykgPC0gbGV2ZWxzKGZhY3RvcihtVmFsX2FnZV9hZGpfZmFkMjNfbWFkMjMkc2V4LmFkLmFwb2VfcHFhZCkpDQoNCiMgbWFrZSBjb250cmFzdCBtYXRyaXgNCmNvbnRyYXN0X2ZhZDIzX21hZDIzIDwtIG1ha2VDb250cmFzdHMoY29udHJhc3RzID0gIkYuQUQuMjMtTS5BRC4yMyIsIGxldmVscyA9IGRlc2lnbl9mYWQyM19tYWQyMykNCg0KIyBkZSBhbmFseWlzDQpmaXRfZmFkMjNfbWFkMjMgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX2ZhZDIzX21hZDIzLCBkZXNpZ25fZmFkMjNfbWFkMjMpDQpmaXRfZmFkMjNfbWFkMjNfMiA8LSBjb250cmFzdHMuZml0KGZpdF9mYWQyM19tYWQyMywgY29udHJhc3RfZmFkMjNfbWFkMjMpDQpmaXRfZmFkMjNfbWFkMjNfMiA8LSBlQmF5ZXMoZml0X2ZhZDIzX21hZDIzXzIpDQoNCiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUNCnN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZhZDIzX21hZDIzXzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX2ZhZDIzX21hZDIzIDwtIHRvcFRhYmxlKGZpdF9mYWQyM19tYWQyM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpDQpgYGANCg0KREUgYW5hbHlzaXMgZm9yIEYuTm9ybWFsLjIzLU0uTm9ybWFsLjIzDQpgYGB7ciBERSBhbmFseXNpcyBmb3IgRi5Ob3JtYWwuMjMtTS5Ob3JtYWwuMjN9DQojIHN1YnNldCBGLk5vcm1hbC4yMyBhbmQgTS5Ob3JtYWwuMjMNCm1WYWxfYWdlX2Fkal9mbmwyM19tbmwyMyA8LSBtVmFsX2FnZV9hZGpbICwgbVZhbF9hZ2VfYWRqJHNleC5hZC5hcG9lX3BxYWQgPT0gIkYuTm9ybWFsLjIzIiB8IG1WYWxfYWdlX2FkaiRzZXguYWQuYXBvZV9wcWFkID09ICJNLk5vcm1hbC4yMyJdDQoNCiMgbWFrZSBkZXNpZ24gbWF0cml4DQpkZXNpZ25fZm5sMjNfbW5sMjMgPC0gbW9kZWwubWF0cml4KH4gMCArIGZhY3RvcihtVmFsX2FnZV9hZGpfZm5sMjNfbW5sMjMkc2V4LmFkLmFwb2VfcHFhZCkpDQpjb2xuYW1lcyhkZXNpZ25fZm5sMjNfbW5sMjMpIDwtIGxldmVscyhmYWN0b3IobVZhbF9hZ2VfYWRqX2ZubDIzX21ubDIzJHNleC5hZC5hcG9lX3BxYWQpKQ0KDQojIG1ha2UgY29udHJhc3QgbWF0cml4DQpjb250cmFzdF9mbmwyM19tbmwyMyA8LSBtYWtlQ29udHJhc3RzKGNvbnRyYXN0cyA9ICJGLk5vcm1hbC4yMy1NLk5vcm1hbC4yMyIsIGxldmVscyA9IGRlc2lnbl9mbmwyM19tbmwyMykNCg0KIyBkZSBhbmFseWlzDQpmaXRfZm5sMjNfbW5sMjMgPC0gbG1GaXQobVZhbF9hZ2VfYWRqX2ZubDIzX21ubDIzLCBkZXNpZ25fZm5sMjNfbW5sMjMpDQpmaXRfZm5sMjNfbW5sMjNfMiA8LSBjb250cmFzdHMuZml0KGZpdF9mbmwyM19tbmwyMywgY29udHJhc3RfZm5sMjNfbW5sMjMpDQpmaXRfZm5sMjNfbW5sMjNfMiA8LSBlQmF5ZXMoZml0X2ZubDIzX21ubDIzXzIpDQoNCiMgbG9vayBhdCB0aGUgbnVtYmVycyBvZiBETSBDcEdzIGF0IEZEUiA8IDAuMDUNCnN1bW1hcnkoZGVjaWRlVGVzdHMoZml0X2ZubDIzX21ubDIzXzIpKQ0KDQojIHNhdmUgZGUgcmVzdWx0cw0KcmVzX2ZubDIzX21ubDIzIDwtIHRvcFRhYmxlKGZpdF9mbmwyM19tbmwyM18yLCBuID0gSW5mLCBnZW5lbGlzdCA9IGFubjg1MGtTdWIpDQpgYGANCg0KV3JpdGluZyB0aGUgcmVzdWx0cw0KYGBge3Igd3JpdGluZyB0aGUgRE1QIHJlc3VsdHMsIG1lc3NhZ2UgPSBGfQ0KIyBETVAgcmVzdWx0cw0KcmVzX2RtcF9hbGwgPC0gbGlzdChyZXNfYWRfbmwsIHJlc19hZDM0X25sMzQsIHJlc19hZDMzX25sMzMsIHJlc19hZDIzX25sMjMsIHJlc19mYWRfZm5sLCByZXNfZmFkMzRfZm5sMzQsIHJlc19mYWQzM19mbmwzMywgcmVzX2ZhZDIzX2ZubDIzLCByZXNfbWFkX21ubCwgcmVzX21hZDM0X21ubDM0LCByZXNfbWFkMzNfbW5sMzMsIHJlc19tYWQyM19tbmwyMywgcmVzX2ZhZF9tYWQsIHJlc19mbmxfbW5sLCByZXNfZmFkMzRfbWFkMzQsIHJlc19mbmwzNF9tbmwzNCwgcmVzX2ZhZDMzX21hZDMzLCByZXNfZm5sMzNfbW5sMzMsIHJlc19mYWQyM19tYWQyMywgcmVzX2ZubDIzX21ubDIzKQ0KDQojIG91dHB1dCBuYW1lcw0Kb3V0X25hbWVzIDwtIHBhc3RlMCgiL3NjL29yZ2EvcHJvamVjdHMvemhhbmdiMDNhL2xlaV9ndW8vQk0zNl9tZXRoeWxhdGlvbl9hbmFseXNpcy9ETVBfUmVzdWx0cy9ETVBfZXJtaW5nX2Fkai8iLCBjKCJETVBfYWRfbmwudHN2IiwgIkRNUF9hZDM0X25sMzQudHN2IiwgIkRNUF9hZDMzX25sMzMudHN2IiwgIkRNUF9hZDIzX25sMjMudHN2IiwgIkRNUF9mYWRfZm5sLnRzdiIsICJETVBfZmFkMzRfZm5sMzQudHN2IiwgIkRNUF9mYWQzM19mbmwzMy50c3YiLCAiRE1QX2ZhZDIzX2ZubDIzLnRzdiIsICJETVBfbWFkX21ubC50c3YiLCAiRE1QX21hZDM0X21ubDM0LnRzdiIsICJETVBfbWFkMzNfbW5sMzMudHN2IiwgIkRNUF9tYWQyM19tbmwyMy50c3YiLCAiRE1QX2ZhZF9tYWQudHN2IiwgIkRNUF9mbmxfbW5sLnRzdiIsICJETVBfZmFkMzRfbWFkMzQudHN2IiwgIkRNUF9mbmwzNF9tbmwzNC50c3YiLCAiRE1QX2ZhZDMzX21hZDMzLnRzdiIsICJETVBfZm5sMzNfbW5sMzMudHN2IiwgIkRNUF9mYWQyM19tYWQyMy50c3YiLCAiRE1QX2ZubDIzX21ubDIzLnRzdiIpKQ0KDQojIHdyaXRlIHRoZSByZXN1bHRzDQppbnZpc2libGUobWFwcGx5KGZ3cml0ZSwgcmVzX2RtcF9hbGwsIG91dF9uYW1lcywgTW9yZUFyZ3MgPSBsaXN0KHJvdy5uYW1lcyA9IFQsIHNlcCA9ICJcdCIpKSkNCmBgYA==</div>
 
 
 
